@@ -1,6 +1,7 @@
 import pytest
 
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
+from projecthub.projects.tests.factories import ProjectFactory, ProjectMembershipFactory
 from projecthub.users.tests.factories import UserFactory
 
 
@@ -37,3 +38,18 @@ def tenant_membership_factory():
 @pytest.fixture
 def tenant_membership(db, tenant, tenant_membership_factory):
     return tenant_membership_factory(tenant=tenant)
+
+
+@pytest.fixture
+def project_factory():
+    return ProjectFactory
+
+
+@pytest.fixture
+def project(db, tenant):
+    return ProjectFactory(tenant=tenant)
+
+
+@pytest.fixture
+def project_membership_factory():
+    return ProjectMembershipFactory

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from projecthub.core.models import UUIDModel, TimestampedModel, Tenant
@@ -76,11 +77,55 @@ class Project(UUIDModel, TimestampedModel):
         status = self.get_status_display()
         return f"{self.name} ({status})"
 
-    # TODO
-    # def archive(self):
-    #     self.status = Project.Status.ARCHIVED
-    #     self.close_date = timezone.now()
-    #     self.save()
+    def activate(self, updated_by):
+        if not updated_by:
+            raise ValidationError("updated_by is required.")
+
+        if not self.status == self.Status.ACTIVE:
+            self.status = self.Status.ACTIVE
+            self.updated_by = updated_by
+            self.updated_at = timezone.now()
+            self.save(update_fields=["status", "updated_by", "updated_at"])
+
+    def mark_pending(self, updated_by):
+        if not updated_by:
+            raise ValidationError("updated_by is required.")
+
+        if not self.status == self.Status.PENDING:
+            self.status = self.Status.PENDING
+            self.updated_by = updated_by
+            self.updated_at = timezone.now()
+            self.save(update_fields=["status", "updated_by", "updated_at"])
+
+    def archive(self, updated_by):
+        if not updated_by:
+            raise ValidationError("updated_by is required.")
+
+        if not self.status == self.Status.ARCHIVED:
+            now = timezone.now()
+            self.status = self.Status.ARCHIVED
+            self.updated_by = updated_by
+            self.updated_at = now
+            self.close_date = now
+            self.save(update_fields=["status", "updated_by", "updated_at"])
+
+    @property
+    def is_active(self):
+        return self.status == self.Status.ACTIVE
+
+    @property
+    def is_pending(self):
+        return self.status == self.Status.PENDING
+
+    @property
+    def is_archived(self):
+        return self.status == self.Status.ARCHIVED
+
+    @property
+    def duration(self):
+        if self.start_date and self.end_date:
+            return self.end_date - self.start_date
+        return None
 
 
 class ProjectMembership(UUIDModel, TimestampedModel):
@@ -142,10 +187,6 @@ class ProjectMembership(UUIDModel, TimestampedModel):
         role = self.get_role_display()
         return f"{self.user.username} ({role}) in {self.project.name}"
 
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
-
     def clean(self):
         # TODO: винести у функцію-валідатор
         if self.role in self.SINGLE_USER_ROLES:
@@ -157,3 +198,27 @@ class ProjectMembership(UUIDModel, TimestampedModel):
                 raise ValidationError(
                     {"role": "Project already has a user with role '{value}'."}
                 )
+
+    @property
+    def is_owner(self):
+        return self.role == self.Role.OWNER
+
+    @property
+    def is_supervisor(self):
+        return self.role == self.Role.SUPERVISOR
+
+    @property
+    def is_responsible(self):
+        return self.role == self.Role.RESPONSIBLE
+
+    @property
+    def is_user(self):
+        return self.role == self.Role.USER
+
+    @property
+    def is_guest(self):
+        return self.role == self.Role.GUEST
+
+    @property
+    def is_reader(self):
+        return self.role == self.Role.READER
