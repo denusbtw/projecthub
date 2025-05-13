@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -35,6 +36,28 @@ class Tenant(UUIDModel, TimestampedModel):
 
     def __str__(self):
         return f"{self.name} ({self.sub_domain})"
+
+    @property
+    def is_inactive(self):
+        return not self.is_active
+
+    def activate(self, updated_by):
+        if not updated_by:
+            raise ValueError("updated_by is required.")
+
+        if self.is_inactive:
+            self.is_active = True
+            self.updated_by = updated_by
+            self.save(update_fields=["is_active", "updated_by"])
+
+    def deactivate(self, updated_by):
+        if not updated_by:
+            raise ValueError("updated_by is required.")
+
+        if self.is_active:
+            self.is_active = False
+            self.updated_by = updated_by
+            self.save(update_fields=["is_active", "updated_by"])
 
 
 class TenantMembership(UUIDModel, TimestampedModel):
@@ -89,3 +112,19 @@ class TenantMembership(UUIDModel, TimestampedModel):
     def __str__(self):
         role = self.get_role_display()
         return f"{self.user.username} ({role}) in {self.tenant.name}"
+
+    def clean(self):
+        if self.role == self.Role.OWNER:
+            existing_owner = TenantMembership.objects.filter(
+                tenant=self.tenant, role=self.Role.OWNER
+            ).exclude(pk=self.pk)
+            if existing_owner.exists():
+                raise ValidationError("Each tenant can have only one owner.")
+
+    @property
+    def is_owner(self):
+        return self.role == self.Role.OWNER
+
+    @property
+    def is_user(self):
+        return self.role == self.Role.USER
