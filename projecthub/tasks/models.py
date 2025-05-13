@@ -1,6 +1,8 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.utils import timezone
 
 from django.utils.translation import gettext_lazy as _
 
@@ -84,6 +86,54 @@ class Task(UUIDModel, TimestampedModel):
         status_name = getattr(self.status, "name", "No status")
         return f"{self.name} ({status_name}) in {self.project.name}"
 
+    @property
+    def duration(self):
+        if self.start_date and self.end_date:
+            return self.end_date - self.start_date
+        return None
+
+    def set_status(self, code: str, updated_by):
+        if not updated_by:
+            raise ValidationError("updated_by is required.")
+
+        status = TaskStatus.objects.filter(
+            tenant_id=self.project.tenant_id, code=code
+        ).first()
+
+        if not status:
+            raise ValidationError(f"No status with code '{code}' found for tenant.")
+
+        now = timezone.now()
+
+        self.status = status
+        self.updated_by = updated_by
+        self.updated_at = now
+
+        if status.is_done:
+            self.close_date = now
+
+        fields = ["status", "updated_by", "updated_at"]
+        if status.is_done:
+            fields.append("close_date")
+
+        self.save(update_fields=fields)
+
+    @property
+    def is_todo(self):
+        return self.status and self.status.is_todo
+
+    @property
+    def is_done(self):
+        return self.status and self.status.is_done
+
+    @property
+    def is_in_progress(self):
+        return self.status and self.status.is_in_progress
+
+    @property
+    def is_in_review(self):
+        return self.status and self.status.is_in_review
+
 
 class TaskStatus(UUIDModel, TimestampedModel):
     tenant = models.ForeignKey(
@@ -131,3 +181,19 @@ class TaskStatus(UUIDModel, TimestampedModel):
 
     def __str__(self):
         return f"{self.name} ({self.order}) in {self.tenant.name}"
+
+    @property
+    def is_todo(self):
+        return self.code == "todo"
+
+    @property
+    def is_in_progress(self):
+        return self.code == "in_progress"
+
+    @property
+    def is_in_review(self):
+        return self.code == "in_review"
+
+    @property
+    def is_done(self):
+        return self.code == "done"

@@ -2,6 +2,7 @@ import pytest
 
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
 from projecthub.projects.tests.factories import ProjectFactory, ProjectMembershipFactory
+from projecthub.tasks.tests.factories import TaskFactory, TaskStatusFactory
 from projecthub.users.tests.factories import UserFactory
 
 
@@ -53,3 +54,38 @@ def project(db, tenant):
 @pytest.fixture
 def project_membership_factory():
     return ProjectMembershipFactory
+
+
+@pytest.fixture
+def task_factory():
+    return TaskFactory
+
+
+@pytest.fixture
+def task(db, project):
+    return TaskFactory(project=project)
+
+
+@pytest.fixture
+def task_status_factory():
+    return TaskStatusFactory
+
+
+@pytest.fixture
+def todo_task_status(db, tenant):
+    return TaskStatusFactory(tenant=tenant, name="To Do", code="todo")
+
+
+@pytest.fixture
+def in_progress_task_status(db, tenant):
+    return TaskStatusFactory(tenant=tenant, name="In progress", code="in_progress")
+
+
+@pytest.fixture
+def in_review_task_status(db, tenant):
+    return TaskStatusFactory(tenant=tenant, name="In review", code="in_review")
+
+
+@pytest.fixture
+def done_task_status(db, tenant):
+    return TaskStatusFactory(tenant=tenant, name="Done", code="done")
