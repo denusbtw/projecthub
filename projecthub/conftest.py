@@ -1,5 +1,6 @@
 import pytest
 
+from projecthub.comments.tests.factories import CommentFactory
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
 from projecthub.projects.tests.factories import ProjectFactory, ProjectMembershipFactory
 from projecthub.tasks.tests.factories import TaskFactory, TaskStatusFactory
@@ -89,3 +90,13 @@ def in_review_task_status(db, tenant):
 @pytest.fixture
 def done_task_status(db, tenant):
     return TaskStatusFactory(tenant=tenant, name="Done", code="done")
+
+
+@pytest.fixture
+def comment_factory():
+    return CommentFactory
+
+
+@pytest.fixture
+def comment(db, task):
+    return CommentFactory(task=task)

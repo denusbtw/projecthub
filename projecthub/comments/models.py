@@ -44,3 +44,7 @@ class Comment(UUIDModel, TimestampedModel):
     def __str__(self):
         body = textwrap.shorten(self.body, 20)
         return f"{self.created_by.username}: {body} in {self.task.name}"
+
+    @property
+    def is_reply(self):
+        return self.parent is not None
