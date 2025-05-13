@@ -35,6 +35,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "projecthub.users",
     "projecthub.core",
+    "projecthub.projects",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
