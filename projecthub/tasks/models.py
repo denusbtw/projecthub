@@ -93,6 +93,7 @@ class TaskStatus(UUIDModel, TimestampedModel):
         help_text=_("Tenant that owns this task status."),
     )
     name = models.CharField(max_length=255, help_text=_("Name of task status."))
+    code = models.CharField(max_length=50, unique=False, blank=True, default="")
     order = models.PositiveIntegerField(help_text=_("Order of task status."))
     is_default = models.BooleanField(
         default=False,
@@ -122,7 +123,10 @@ class TaskStatus(UUIDModel, TimestampedModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["tenant", "order"], name="unique_task_status_order_for_tenant"
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["tenant", "code"], name="unique_task_status_code_for_tenant"
+            ),
         ]
 
     def __str__(self):
