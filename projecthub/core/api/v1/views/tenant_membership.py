@@ -12,6 +12,9 @@ from projecthub.core.models import TenantMembership
 
 class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TenantMembershipPagination
+    #TODO: add filterset_class
+    #TODO: add search by user__email
+    #TODO: add ordering by created_at
 
     # TODO: move into mixin
     def initial(self, request, *args, **kwargs):
@@ -27,6 +30,8 @@ class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
         self._is_tenant_member = bool(membership)
         self._is_tenant_owner = (self._tenant_role == TenantMembership.Role.OWNER)
         self._is_tenant_user = (self._tenant_role == TenantMembership.Role.USER)
+
+        # only admin and tenant member have access
         if not (request.user.is_staff or self._is_tenant_member):
             raise exceptions.NotFound()
 
@@ -37,6 +42,7 @@ class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
         if request.method in permissions.SAFE_METHODS:
             return
 
+        # only admin and tenant owner can POST
         if self._is_staff or self._is_tenant_owner:
             return
 

@@ -15,6 +15,9 @@ from projecthub.tasks.models import Task
 
 class TaskListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TaskPagination
+    #TODO: add filterset_class
+    #TODO: add search by name
+    #TODO: add ordering by created_at, priority, start_date, end_date and close_date
 
     # TODO: move logic into mixin
     def initial(self, request, *args, **kwargs):
@@ -30,6 +33,7 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
             user=request.user,
         ).first()
 
+        # only admin, tenant owner and project member have access
         if not (
                 request.user.is_staff
                 or (self._tenant_membership and self._tenant_membership.is_owner)
@@ -41,6 +45,7 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
 
     # TODO: move into permission classes
     def check_permissions(self, request):
+        # only admin, tenant owner or project staff can POST, others only GET
         if (
             request.method in permissions.SAFE_METHODS
             or request.user.is_staff
@@ -65,7 +70,7 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
         ):
             return base_queryset
 
-        # project user see only tasks he is responsible of
+        # project user see only tasks he is responsible for
         if self._project_membership and self._project_membership.is_user:
             return base_queryset.filter(responsible=self.request.user)
         return Task.objects.none()
@@ -105,6 +110,7 @@ class TaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         task = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
         self._is_task_responsible = (self.request.user.pk == task.responsible_id)
 
+        # only admin, tenant owner, project staff or task responsible have access
         if not (
                 self.request.user.is_staff
                 or (self._tenant_membership and self._tenant_membership.is_owner)
@@ -121,6 +127,7 @@ class TaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         if request.method in permissions.SAFE_METHODS:
             return
 
+        # task responsible can't delete task, only update
         if request.method == "DELETE" and self._is_task_responsible:
             raise exceptions.PermissionDenied()
 

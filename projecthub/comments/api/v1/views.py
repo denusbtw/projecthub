@@ -12,6 +12,9 @@ from ...models import Comment
 class CommentListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = CommentPagination
     permission_classes = [permissions.IsAuthenticated]
+    #TODO: add custom filterset_class
+    #TODO: add search by body
+    #TODO: add ordering by created_at and parent
 
     # TODO: move logic into mixin
     def initial(self, request, *args, **kwargs):
@@ -40,6 +43,7 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
 
         super().initial(request, *args, **kwargs)
 
+    # TODO: move logic into Comment manager
     def get_queryset(self):
         return Comment.objects.filter(
             task__project__tenant=self.request.tenant, task_id=self.kwargs["task_id"]
@@ -57,6 +61,7 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
 class CommentDestroyAPIView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    # TODO: move into mixin
     def initial(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             raise exceptions.PermissionDenied()
@@ -73,6 +78,7 @@ class CommentDestroyAPIView(generics.DestroyAPIView):
         ).first()
         self._is_task_responsible = (self._task.responsible_id == self.request.user.pk)
 
+        # admin, tenant owner, project staff and task responsible have access
         if not (
             request.user.is_staff
             or (self._tenant_membership and self._tenant_membership.is_owner)
@@ -83,16 +89,19 @@ class CommentDestroyAPIView(generics.DestroyAPIView):
 
         super().initial(request, *args, **kwargs)
 
+    # TODO: move logic into Comment manager
     def get_queryset(self):
         return Comment.objects.filter(
             task__project__tenant=self.request.tenant,
             task_id=self.kwargs["task_id"]
         )
 
+    # TODO: move into permission classes
     def check_object_permissions(self, request, obj):
         if request.method in permissions.SAFE_METHODS:
             return
 
+        # staff, tenant owner, project owner and comment author can PUT, PATCH, DELETE
         self._is_comment_author = (obj.created_by_id == request.user.pk)
         if (
             request.user.is_staff

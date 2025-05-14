@@ -14,6 +14,9 @@ from projecthub.projects.models import ProjectMembership, Project
 
 class ProjectListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = ProjectPagination
+    #TODO: add filterset_class
+    #TODO: add search by name
+    #TODO: add ordering by start_date, end_date, close_date, created_at
 
     # TODO: move into mixin
     def initial(self, request, *args, **kwargs):

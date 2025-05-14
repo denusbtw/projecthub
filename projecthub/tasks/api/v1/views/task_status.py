@@ -13,7 +13,11 @@ from ..serializers import (
 
 class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TaskStatusPagination
+    #TODO: add filterset_class
+    #TODO: add search by name and code
+    #TODO: add ordering by created_at, order, name
 
+    #TODO: move into mixin
     def initial(self, request, *args, **kwargs):
         if not self.request.user.is_authenticated:
             raise exceptions.PermissionDenied()
@@ -22,11 +26,13 @@ class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
             tenant=self.request.tenant, user=self.request.user
         ).first()
 
+        # only staff and tenant member have access
         if not (request.user.is_staff or self._tenant_membership):
             raise exceptions.NotFound()
 
         super().initial(request, *args, **kwargs)
 
+    # TODO: move into permission classes
     def check_permissions(self, request):
         if request.method in permissions.SAFE_METHODS:
             return
@@ -39,6 +45,7 @@ class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
 
         raise exceptions.PermissionDenied()
 
+    # TODO: move into TaskStatus manager
     def get_queryset(self):
         return TaskStatus.objects.filter(tenant=self.request.tenant)
 
@@ -58,19 +65,23 @@ class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
 class TaskStatusRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    # TODO: move into Task Status manager
     def get_queryset(self):
         self._tenant_membership = TenantMembership.objects.filter(
             tenant=self.request.tenant, user=self.request.user
         ).first()
 
+        # admin and tenant member see all task statuses
         if self.request.user.is_staff or self._tenant_membership:
             return TaskStatus.objects.filter(tenant=self.request.tenant)
         return TaskStatus.objects.none()
 
+    # TODO: move into permission classes
     def check_object_permissions(self, request, obj):
         if request.method in permissions.SAFE_METHODS:
             return
 
+        # only admin and tenant owner can PUT, PATCH and DELETE
         if (
                 request.user.is_staff
                 or (self._tenant_membership and self._tenant_membership.is_owner)

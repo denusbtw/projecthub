@@ -15,8 +15,11 @@ from ..serializers import (
 class TenantListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TenantPagination
     permission_classes = [permissions.IsAuthenticated]
+    #TODO: add filterset_class
+    #TODO: add search by name and sub_domain
+    #TODO: add ordering by created_at
 
-    # TODO: move logic in Tenant manager
+    # TODO: move logic into Tenant manager
     def get_queryset(self):
         role_subquery = TenantMembership.objects.filter(
             tenant=OuterRef("pk"), user=self.request.user

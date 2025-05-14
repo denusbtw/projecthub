@@ -13,6 +13,9 @@ from projecthub.projects.models import ProjectMembership
 
 class ProjectMembershipListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = ProjectMembershipPagination
+    #TODO: add filterset_class
+    #TODO: add search by user__email
+    #TODO: add ordering by created_at
 
     # TODO: move into mixin
     def initial(self, request, *args, **kwargs):
@@ -98,6 +101,7 @@ class ProjectMembershipRetrieveUpdateDestroyAPIView(
             user=self.request.user
         ).first()
 
+        # admin, tenant owner and project member can see members
         if (
             self.request.user.is_staff
             or (self._tenant_membership and self._tenant_membership.is_owner)
