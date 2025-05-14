@@ -1,6 +1,8 @@
 import pytest
+from rest_framework.test import APIClient
 
 from projecthub.comments.tests.factories import CommentFactory
+from projecthub.core.models import TenantMembership
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
 from projecthub.projects.tests.factories import ProjectFactory, ProjectMembershipFactory
 from projecthub.tasks.tests.factories import TaskFactory, TaskStatusFactory
@@ -40,6 +42,16 @@ def tenant_membership_factory():
 @pytest.fixture
 def tenant_membership(db, tenant, tenant_membership_factory):
     return tenant_membership_factory(tenant=tenant)
+
+
+@pytest.fixture
+def tenant_user(db, tenant, tenant_membership_factory):
+    return tenant_membership_factory(tenant=tenant, role=TenantMembership.Role.USER)
+
+
+@pytest.fixture
+def tenant_owner(db, tenant, tenant_membership_factory):
+    return tenant_membership_factory(tenant=tenant, role=TenantMembership.Role.OWNER)
 
 
 @pytest.fixture
@@ -100,3 +112,8 @@ def comment_factory():
 @pytest.fixture
 def comment(db, task):
     return CommentFactory(task=task)
+
+
+@pytest.fixture
+def api_client():
+    return APIClient()
