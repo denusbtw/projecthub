@@ -138,6 +138,7 @@ class ProjectMembership(UUIDModel, TimestampedModel):
         READER = ("reader", _("Reader"))
 
     SINGLE_USER_ROLES = {Role.OWNER, Role.SUPERVISOR, Role.RESPONSIBLE}
+    STAFF_USER_ROLES = {Role.OWNER, Role.SUPERVISOR, Role.RESPONSIBLE}
 
     project = models.ForeignKey(
         "Project",
@@ -222,3 +223,7 @@ class ProjectMembership(UUIDModel, TimestampedModel):
     @property
     def is_reader(self):
         return self.role == self.Role.READER
+
+    @property
+    def is_staff(self):
+        return self.role in self.STAFF_USER_ROLES

@@ -4,6 +4,7 @@ from rest_framework.test import APIClient
 from projecthub.comments.tests.factories import CommentFactory
 from projecthub.core.models import TenantMembership
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
+from projecthub.projects.models import ProjectMembership
 from projecthub.projects.tests.factories import ProjectFactory, ProjectMembershipFactory
 from projecthub.tasks.tests.factories import TaskFactory, TaskStatusFactory
 from projecthub.users.tests.factories import UserFactory
@@ -67,6 +68,45 @@ def project(db, tenant):
 @pytest.fixture
 def project_membership_factory():
     return ProjectMembershipFactory
+
+
+@pytest.fixture
+def project_membership(db, project):
+    return ProjectMembershipFactory(project=project, role=ProjectMembership.Role.USER)
+
+
+@pytest.fixture
+def project_owner(db, project):
+    return ProjectMembershipFactory(project=project, role=ProjectMembership.Role.OWNER)
+
+
+@pytest.fixture
+def project_supervisor(db, project):
+    return ProjectMembershipFactory(
+        project=project, role=ProjectMembership.Role.SUPERVISOR
+    )
+
+
+@pytest.fixture
+def project_responsible(db, project):
+    return ProjectMembershipFactory(
+        project=project, role=ProjectMembership.Role.RESPONSIBLE
+    )
+
+
+@pytest.fixture
+def project_user(db, project):
+    return ProjectMembershipFactory(project=project, role=ProjectMembership.Role.USER)
+
+
+@pytest.fixture
+def project_guest(db, project):
+    return ProjectMembershipFactory(project=project, role=ProjectMembership.Role.GUEST)
+
+
+@pytest.fixture
+def project_reader(db, project):
+    return ProjectMembershipFactory(project=project, role=ProjectMembership.Role.READER)
 
 
 @pytest.fixture
