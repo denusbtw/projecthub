@@ -1,4 +1,5 @@
 import factory
+from django.utils.text import slugify
 
 from ..models import Task, TaskStatus
 from projecthub.projects.models import ProjectMembership
@@ -6,6 +7,7 @@ from projecthub.projects.tests.factories import ProjectFactory
 from projecthub.users.tests.factories import UserFactory
 from projecthub.core.models import TenantMembership
 from projecthub.core.tests.factories import TenantFactory
+
 
 
 class TaskStatusFactory(factory.django.DjangoModelFactory):
@@ -18,6 +20,11 @@ class TaskStatusFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = TaskStatus
+
+    # TODO: test
+    @factory.lazy_attribute
+    def code(self):
+        return slugify(self.name)
 
 
 class TaskFactory(factory.django.DjangoModelFactory):
@@ -37,6 +44,7 @@ class TaskFactory(factory.django.DjangoModelFactory):
         model = Task
         skip_postgeneration_save = True
 
+    # TODO: test
     @factory.post_generation
     def create_project_membership(self, created, extracted, **kwargs):
         if not created:
@@ -52,6 +60,7 @@ class TaskFactory(factory.django.DjangoModelFactory):
             },
         )
 
+    # TODO: test
     @factory.post_generation
     def create_tenant_membership(self, created, extracted, **kwargs):
         if not created:

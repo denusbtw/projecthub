@@ -10,6 +10,12 @@ from projecthub.projects.api.v1.views import (
     ProjectMembershipListCreateAPIView,
     ProjectMembershipRetrieveUpdateDestroyAPIView,
 )
+from projecthub.tasks.api.v1.views import (
+    TaskListCreateAPIView,
+    TaskRetrieveUpdateDestroyAPIView,
+    TaskStatusListCreateAPIView,
+    TaskStatusRetrieveUpdateDestroyAPIView,
+)
 
 app_name = "v1"
 urlpatterns = [
@@ -44,5 +50,23 @@ urlpatterns = [
         "projects/<uuid:project_id>/members/<uuid:pk>/",
         ProjectMembershipRetrieveUpdateDestroyAPIView.as_view(),
         name="project_membership_detail"
+    ),
+    path(
+        "projects/<uuid:project_id>/tasks/",
+        TaskListCreateAPIView.as_view(),
+        name="task_list"
+    ),
+    path(
+        "projects/<uuid:project_id>/tasks/<uuid:pk>/",
+        TaskRetrieveUpdateDestroyAPIView.as_view(),
+        name="task_detail"
+    ),
+    path(
+        "task-statuses/", TaskStatusListCreateAPIView.as_view(), name="task_status_list"
+    ),
+    path(
+        "task-statuses/<uuid:pk>/",
+        TaskStatusRetrieveUpdateDestroyAPIView.as_view(),
+        name="task_status_detail"
     )
 ]
