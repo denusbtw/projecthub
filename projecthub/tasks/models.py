@@ -118,6 +118,16 @@ class Task(UUIDModel, TimestampedModel):
 
         self.save(update_fields=fields)
 
+    def revoke(self, updated_by):
+        if not updated_by:
+            raise ValidationError("updated_by is required.")
+
+        self.status = None
+        self.responsible = None
+        self.updated_by = updated_by
+        self.updated_at = timezone.now()
+        self.save(update_fields=["status", "responsible", "updated_by", "updated_at"])
+
     @property
     def is_todo(self):
         return self.status and self.status.is_todo

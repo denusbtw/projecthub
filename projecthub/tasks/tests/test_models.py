@@ -68,6 +68,19 @@ class TestTask:
         assert not task.is_in_review
         assert task.is_done
 
+    def test_revoke_should_remove_responsible_and_status(
+            self, todo_task_status, user, task_factory
+    ):
+        task = task_factory(status=todo_task_status, responsible=user)
+        task.revoke(updated_by=user)
+        assert task.status is None
+        assert task.responsible is None
+        assert task.updated_by == user
+
+    def test_revoke_error_if_missing_updated_by(self, task):
+        with pytest.raises(ValidationError, match="updated_by is required."):
+            task.revoke(updated_by=None)
+
 
 @pytest.mark.django_db
 class TestTaskStatus:
