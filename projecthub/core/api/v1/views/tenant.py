@@ -1,8 +1,10 @@
 from django.db.models import OuterRef, Subquery
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions
 
 from projecthub.core.models import TenantMembership, Tenant
 from .pagination import TenantPagination
+from ..filters import TenantFilterSet
 from ..permissions import IsTenantOwnerOrReadOnlyForCore
 from ..serializers import (
     TenantCreateSerializer,
@@ -15,7 +17,8 @@ from ..serializers import (
 class TenantListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TenantPagination
     permission_classes = [permissions.IsAuthenticated]
-    #TODO: add filterset_class
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TenantFilterSet
     #TODO: add search by name and sub_domain
     #TODO: add ordering by created_at
 

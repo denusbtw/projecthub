@@ -157,3 +157,13 @@ def comment(db, task):
 @pytest.fixture
 def api_client():
     return APIClient()
+
+
+@pytest.fixture
+def john(db):
+    return UserFactory(username="john")
+
+
+@pytest.fixture
+def alice(db):
+    return UserFactory(username="alice")

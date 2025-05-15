@@ -310,6 +310,22 @@ class TestTaskListCreateAPIView:
         assert task.created_by == admin_user
         assert task.updated_by == admin_user
 
+    def test_filtering_works(
+            self,
+            admin_client,
+            list_url,
+            project,
+            task_factory,
+            john,
+            alice,
+            http_host
+    ):
+        john_task = task_factory(project=project, created_by=john)
+        alice_task = task_factory(project=project, created_by=alice)
+        response = admin_client.get(list_url, {"creator": "john"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        assert {t["id"] for t in response.data["results"]} == {str(john_task.pk)}
+
 
 @pytest.mark.django_db
 class TestTaskRetrieveUpdateDestroyAPIView:

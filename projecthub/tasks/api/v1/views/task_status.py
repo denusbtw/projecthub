@@ -1,8 +1,10 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, exceptions, permissions
 
 from projecthub.core.models import TenantMembership
 from projecthub.tasks.models import TaskStatus
 from .pagination import TaskStatusPagination
+from ..filters import TaskStatusFilterSet
 from ..serializers import (
     TaskStatusCreateSerializer,
     TaskStatusListSerializer,
@@ -13,7 +15,8 @@ from ..serializers import (
 
 class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TaskStatusPagination
-    #TODO: add filterset_class
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TaskStatusFilterSet
     #TODO: add search by name and code
     #TODO: add ordering by created_at, order, name
 

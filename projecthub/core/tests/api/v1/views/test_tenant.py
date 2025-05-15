@@ -90,6 +90,14 @@ class TestTenantListCreateAPIView:
         assert tenant.created_by == admin_user
         assert tenant.updated_by == admin_user
 
+    def test_filtering_works(
+            self, admin_client, list_url, tenant_factory, john, alice
+    ):
+        john_tenant = tenant_factory(created_by=john)
+        alice_tenant = tenant_factory(created_by=alice)
+        response = admin_client.get(list_url, {"creator": "john"})
+        assert response.status_code == status.HTTP_200_OK
+        assert {t["id"] for t in response.data["results"]} == {str(john_tenant.pk)}
 
 @pytest.mark.django_db
 class TestTenantRetrieveUpdateDestroyAPIView:

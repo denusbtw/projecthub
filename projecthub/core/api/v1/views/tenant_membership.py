@@ -1,5 +1,7 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, exceptions, permissions
 
+from projecthub.core.api.v1.filters import TenantMembershipFilterSet
 from projecthub.core.api.v1.serializers import (
     TenantMembershipCreateSerializer,
     TenantMembershipListSerializer,
@@ -12,8 +14,9 @@ from projecthub.core.models import TenantMembership
 
 class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TenantMembershipPagination
-    #TODO: add filterset_class
-    #TODO: add search by user__email
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TenantMembershipFilterSet
+    #TODO: add search by user__username
     #TODO: add ordering by created_at
 
     # TODO: move into mixin
@@ -48,7 +51,6 @@ class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
 
         raise exceptions.PermissionDenied()
 
-    # TODO: move logic into TenantMembership manager
     def get_queryset(self):
         qs = TenantMembership.objects.for_tenant(self.request.tenant)
         return qs
@@ -92,7 +94,6 @@ class TenantMembershipRetrieveUpdateDestroyAPIView(
 
         raise exceptions.PermissionDenied()
 
-    # TODO: move logic into TenantMembership manager
     def get_queryset(self):
         qs = TenantMembership.objects.for_tenant(self.request.tenant)
         return qs

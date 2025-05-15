@@ -1,9 +1,11 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, exceptions, permissions
 from rest_framework.generics import get_object_or_404
 
 from projecthub.core.models import TenantMembership
 from projecthub.projects.models import ProjectMembership
 from projecthub.tasks.models import Task
+from .filters import CommentFilterSet
 from .pagination import CommentPagination
 from .serializers import CommentListSerializer, CommentCreateSerializer
 from ...models import Comment
@@ -12,7 +14,8 @@ from ...models import Comment
 class CommentListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = CommentPagination
     permission_classes = [permissions.IsAuthenticated]
-    #TODO: add custom filterset_class
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CommentFilterSet
     #TODO: add search by body
     #TODO: add ordering by created_at and parent
 

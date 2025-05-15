@@ -147,6 +147,22 @@ class TestTaskStatusListCreateAPIView:
         assert task_status.created_by == admin_user
         assert task_status.updated_by == admin_user
 
+    def test_filtering_works(
+            self,
+            admin_client,
+            list_url,
+            tenant,
+            john,
+            alice,
+            http_host,
+            task_status_factory
+    ):
+        john_status = task_status_factory(tenant=tenant, created_by=john)
+        alice_status = task_status_factory(tenant=tenant, created_by=alice)
+        response = admin_client.get(list_url, {"creator": "john"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        assert {s["id"] for s in response.data["results"]} == {str(john_status.pk)}
+
 
 @pytest.mark.django_db
 class TestTaskStatusRetrieveUpdateDestroyAPIView:

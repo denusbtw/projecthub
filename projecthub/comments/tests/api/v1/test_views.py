@@ -275,6 +275,22 @@ class TestCommentListCreateAPIView:
         assert comment.task == task
         assert comment.created_by == admin_user
 
+    def test_filtering_works(
+            self,
+            admin_client,
+            list_url,
+            task,
+            comment_factory,
+            john,
+            alice,
+            http_host
+    ):
+        john_comment = comment_factory(task=task, created_by=john)
+        alice_comment = comment_factory(task=task, created_by=alice)
+        response = admin_client.get(list_url, {"author": "john"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        assert {c["id"] for c in response.data["results"]} == {str(john_comment.pk)}
+
 
 @pytest.mark.django_db
 class TestCommentDestroyAPIView:

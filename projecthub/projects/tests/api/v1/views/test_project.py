@@ -187,6 +187,22 @@ class TestProjectListCreateAPIView:
         assert project.created_by == admin_user
         assert project.updated_by == admin_user
 
+    def test_filtering_works(
+            self,
+            admin_client,
+            list_url,
+            tenant,
+            project_factory,
+            john,
+            alice,
+            http_host
+    ):
+        john_project = project_factory(tenant=tenant, created_by=john)
+        alice_project = project_factory(tenant=tenant, created_by=alice)
+        response = admin_client.get(list_url, {"creator": "john"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        assert {p["id"] for p in response.data["results"]} == {str(john_project.pk)}
+
 
 @pytest.mark.django_db
 class TestProjectRetrieveUpdateDestroyAPIView:

@@ -234,6 +234,22 @@ class TestProjectMembershipListCreateAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 3
 
+    def test_filtering_works(
+            self,
+            admin_client,
+            list_url,
+            project,
+            project_membership_factory,
+            john,
+            alice,
+            http_host
+    ):
+        john_membership = project_membership_factory(project=project, created_by=john)
+        alice_membership = project_membership_factory(project=project, created_by=alice)
+        response = admin_client.get(list_url, {"creator": "john"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        assert {m["id"] for m in response.data["results"]} == {str(john_membership.pk)}
+
 
 @pytest.mark.django_db
 class TestProjectMembershipRetrieveUpdateDestroyAPIView:
