@@ -163,6 +163,16 @@ class TestTaskStatusListCreateAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert {s["id"] for s in response.data["results"]} == {str(john_status.pk)}
 
+    def test_search_works(
+            self, admin_client, list_url, tenant, task_status_factory, http_host
+    ):
+        abc_status = task_status_factory(name="abc", tenant=tenant)
+        qwe_status = task_status_factory(name="qwe", tenant=tenant)
+
+        response = admin_client.get(list_url, {"search": "ab"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        assert {s["id"] for s in response.data["results"]} == {str(abc_status.pk)}
+
 
 @pytest.mark.django_db
 class TestTaskStatusRetrieveUpdateDestroyAPIView:

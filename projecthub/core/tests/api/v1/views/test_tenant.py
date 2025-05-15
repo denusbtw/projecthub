@@ -99,6 +99,14 @@ class TestTenantListCreateAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert {t["id"] for t in response.data["results"]} == {str(john_tenant.pk)}
 
+    def test_search_works(self, admin_client, list_url, tenant_factory):
+        abc_tenant = tenant_factory(name="abc")
+        qwe_tenant = tenant_factory(name="qwe")
+
+        response = admin_client.get(list_url, {"search": "abc"})
+        assert response.status_code == status.HTTP_200_OK
+        assert {t["id"] for t in response.data["results"]} == {str(abc_tenant.pk)}
+
 @pytest.mark.django_db
 class TestTenantRetrieveUpdateDestroyAPIView:
 

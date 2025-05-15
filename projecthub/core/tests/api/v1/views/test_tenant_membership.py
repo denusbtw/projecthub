@@ -150,6 +150,23 @@ class TestTenantMembershipListCreateAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert {m["id"] for m in response.data["results"]} == {str(john_membership.pk)}
 
+    def test_search_works(
+            self,
+            admin_client,
+            list_url,
+            tenant,
+            tenant_membership_factory,
+            john,
+            alice,
+            http_host
+    ):
+        john_membership = tenant_membership_factory(tenant=tenant, user=john)
+        alice_membership = tenant_membership_factory(tenant=tenant, user=alice)
+
+        response = admin_client.get(list_url, {"search": "jo"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        assert {m["id"] for m in response.data["results"]} == {str(john_membership.pk)}
+
 
 @pytest.mark.django_db
 class TestTenantMembershipRetrieveUpdateDestroyAPIView:

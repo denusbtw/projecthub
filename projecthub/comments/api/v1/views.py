@@ -1,5 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, exceptions, permissions
+from rest_framework import generics, exceptions, permissions, filters
 from rest_framework.generics import get_object_or_404
 
 from projecthub.core.models import TenantMembership
@@ -14,9 +14,9 @@ from ...models import Comment
 class CommentListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = CommentPagination
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = CommentFilterSet
-    #TODO: add search by body
+    search_fields = ["body"]
     #TODO: add ordering by created_at and parent
 
     # TODO: move logic into mixin

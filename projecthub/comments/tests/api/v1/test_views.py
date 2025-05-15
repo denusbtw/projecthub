@@ -291,6 +291,16 @@ class TestCommentListCreateAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert {c["id"] for c in response.data["results"]} == {str(john_comment.pk)}
 
+    def test_search_works(
+            self, admin_client, list_url, task, comment_factory, http_host
+    ):
+        abc_comment = comment_factory(body="abc", task=task)
+        qwe_comment = comment_factory(body="qwe", task=task)
+
+        response = admin_client.get(list_url, {"search": "ab"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        assert {c["id"] for c in response.data["results"]} == {str(abc_comment.pk)}
+
 
 @pytest.mark.django_db
 class TestCommentDestroyAPIView:

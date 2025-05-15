@@ -1,5 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, exceptions, permissions
+from rest_framework import generics, exceptions, permissions, filters
 
 from projecthub.core.api.v1.filters import TenantMembershipFilterSet
 from projecthub.core.api.v1.serializers import (
@@ -14,9 +14,9 @@ from projecthub.core.models import TenantMembership
 
 class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TenantMembershipPagination
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = TenantMembershipFilterSet
-    #TODO: add search by user__username
+    search_fields = ["user__username"]
     #TODO: add ordering by created_at
 
     # TODO: move into mixin

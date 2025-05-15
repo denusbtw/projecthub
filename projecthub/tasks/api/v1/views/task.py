@@ -1,5 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, exceptions, permissions
+from rest_framework import generics, exceptions, permissions, filters
 
 from projecthub.core.models import TenantMembership
 from projecthub.projects.models import ProjectMembership
@@ -16,9 +16,9 @@ from projecthub.tasks.models import Task
 
 class TaskListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TaskPagination
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = TaskFilterSet
-    #TODO: add search by name
+    search_fields = ["name"]
     #TODO: add ordering by created_at, priority, start_date, end_date and close_date
 
     # TODO: move logic into mixin

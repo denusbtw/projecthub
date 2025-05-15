@@ -1,6 +1,6 @@
 from django.db.models import OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, permissions, exceptions
+from rest_framework import generics, permissions, exceptions, filters
 
 from projecthub.core.models import TenantMembership
 from projecthub.projects.api.v1.filters import ProjectFilterSet
@@ -16,9 +16,9 @@ from projecthub.projects.models import ProjectMembership, Project
 
 class ProjectListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = ProjectPagination
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = ProjectFilterSet
-    #TODO: add search by name
+    search_fields = ["name"]
     #TODO: add ordering by start_date, end_date, close_date, created_at
 
     # TODO: move into mixin
