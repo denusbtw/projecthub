@@ -107,6 +107,15 @@ class TestTenantListCreateAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert {t["id"] for t in response.data["results"]} == {str(abc_tenant.pk)}
 
+    def test_ordering_works(self, admin_client, list_url, tenant_factory):
+        a_tenant = tenant_factory(name="a")
+        z_tenant = tenant_factory(name="z")
+
+        response = admin_client.get(list_url, {"ordering": "-name"})
+        assert response.status_code == status.HTTP_200_OK
+        expected_ids = [str(z_tenant.pk), str(a_tenant.pk)]
+        assert [t["id"] for t in response.data["results"]] == expected_ids
+
 @pytest.mark.django_db
 class TestTenantRetrieveUpdateDestroyAPIView:
 

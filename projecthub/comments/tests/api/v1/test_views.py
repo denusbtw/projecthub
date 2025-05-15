@@ -1,4 +1,7 @@
+from datetime import datetime
+
 import pytest
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -300,6 +303,24 @@ class TestCommentListCreateAPIView:
         response = admin_client.get(list_url, {"search": "ab"}, HTTP_HOST=http_host)
         assert response.status_code == status.HTTP_200_OK
         assert {c["id"] for c in response.data["results"]} == {str(abc_comment.pk)}
+
+    def test_ordering_works(
+            self, admin_client, list_url, task, comment_factory, http_host
+    ):
+        old_comment = comment_factory(
+            created_at=timezone.make_aware(datetime(2000, 1, 1)),
+            task=task
+        )
+        new_comment = comment_factory(
+            created_at=timezone.make_aware(datetime(2000, 2, 2)),
+            task=task
+        )
+
+        query_params = {"ordering": "created_at"}
+        response = admin_client.get(list_url, query_params, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        expected_ids = [str(old_comment.pk), str(new_comment.pk)]
+        assert [c["id"] for c in response.data["results"]] == expected_ids
 
 
 @pytest.mark.django_db

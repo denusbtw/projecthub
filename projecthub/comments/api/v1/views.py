@@ -14,10 +14,14 @@ from ...models import Comment
 class CommentListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = CommentPagination
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
     filterset_class = CommentFilterSet
     search_fields = ["body"]
-    #TODO: add ordering by created_at and parent
+    ordering_fields = ["parent", "created_at"]
 
     # TODO: move logic into mixin
     def initial(self, request, *args, **kwargs):

@@ -1,4 +1,7 @@
+from datetime import datetime
+
 import pytest
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -266,6 +269,24 @@ class TestProjectMembershipListCreateAPIView:
         response = admin_client.get(list_url, {"search": "jo"}, HTTP_HOST=http_host)
         assert response.status_code == status.HTTP_200_OK
         assert {m["id"] for m in response.data["results"]} == {str(john_membership.pk)}
+
+    def test_ordering_works(
+            self, admin_client, list_url, project, project_membership_factory, http_host
+    ):
+        old_membership = project_membership_factory(
+            created_at=timezone.make_aware(datetime(2000, 1, 1)),
+            project=project
+        )
+        new_membership = project_membership_factory(
+            created_at=timezone.make_aware(datetime(2000, 2, 2)),
+            project=project
+        )
+
+        query_params = {"ordering": {"created_at"}}
+        response = admin_client.get(list_url, query_params, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        expected_ids = [str(old_membership.pk), str(new_membership.pk)]
+        assert [m["id"] for m in response.data["results"]] == expected_ids
 
 
 @pytest.mark.django_db

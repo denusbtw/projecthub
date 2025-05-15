@@ -17,10 +17,14 @@ from ..serializers import (
 class TenantListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TenantPagination
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
     filterset_class = TenantFilterSet
     search_fields = ["name", "sub_domain"]
-    #TODO: add ordering by created_at
+    ordering_fields = ["created_at", "name", "sub_domain", "is_active"]
 
     def get_queryset(self):
         qs = Tenant.objects.visible_to(self.request.user)

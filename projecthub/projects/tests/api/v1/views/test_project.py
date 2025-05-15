@@ -212,6 +212,17 @@ class TestProjectListCreateAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert {p["id"] for p in response.data["results"]} == {str(abc_project.pk)}
 
+    def test_ordering_works(
+            self, admin_client, list_url, tenant, project_factory, http_host
+    ):
+        a_project = project_factory(name="a", tenant=tenant)
+        z_project = project_factory(name="z", tenant=tenant)
+
+        response = admin_client.get(list_url, {"ordering": "name"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        expected_ids = [str(a_project.pk), str(z_project.pk)]
+        assert [p["id"] for p in response.data["results"]] == expected_ids
+
 
 @pytest.mark.django_db
 class TestProjectRetrieveUpdateDestroyAPIView:

@@ -16,10 +16,14 @@ from projecthub.projects.models import ProjectMembership, Project
 
 class ProjectListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = ProjectPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
     filterset_class = ProjectFilterSet
     search_fields = ["name"]
-    #TODO: add ordering by start_date, end_date, close_date, created_at
+    ordering_fields = ["name", "created_at", "start_date", "end_date", "close_date"]
 
     # TODO: move into mixin
     def initial(self, request, *args, **kwargs):

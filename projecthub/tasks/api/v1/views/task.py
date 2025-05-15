@@ -16,10 +16,21 @@ from projecthub.tasks.models import Task
 
 class TaskListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TaskPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
     filterset_class = TaskFilterSet
     search_fields = ["name"]
-    #TODO: add ordering by created_at, priority, start_date, end_date and close_date
+    ordering_fields = [
+        "name",
+        "priority",
+        "created_at",
+        "start_date",
+        "end_date",
+        "close_date"
+    ]
 
     # TODO: move logic into mixin
     def initial(self, request, *args, **kwargs):

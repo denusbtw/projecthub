@@ -15,10 +15,14 @@ from ..serializers import (
 
 class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TaskStatusPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
     filterset_class = TaskStatusFilterSet
     search_fields = ["name", "code"]
-    #TODO: add ordering by created_at, order, name
+    ordering_fields = ["name", "order", "created_at", "is_default"]
 
     #TODO: move into mixin
     def initial(self, request, *args, **kwargs):

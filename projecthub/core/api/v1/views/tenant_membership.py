@@ -14,10 +14,14 @@ from projecthub.core.models import TenantMembership
 
 class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TenantMembershipPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
     filterset_class = TenantMembershipFilterSet
     search_fields = ["user__username"]
-    #TODO: add ordering by created_at
+    ordering_fields = ["created_at"]
 
     # TODO: move into mixin
     def initial(self, request, *args, **kwargs):

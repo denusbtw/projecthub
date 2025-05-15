@@ -173,6 +173,17 @@ class TestTaskStatusListCreateAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert {s["id"] for s in response.data["results"]} == {str(abc_status.pk)}
 
+    def test_ordering_works(
+            self, admin_client, list_url, tenant, task_status_factory, http_host
+    ):
+        a_status = task_status_factory(name="a", tenant=tenant)
+        z_status = task_status_factory(name="z", tenant=tenant)
+
+        response = admin_client.get(list_url, {"ordering": "name"}, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+        expected_ids = [str(a_status.pk), str(z_status.pk)]
+        assert [s["id"] for s in response.data["results"]] == expected_ids
+
 
 @pytest.mark.django_db
 class TestTaskStatusRetrieveUpdateDestroyAPIView:
