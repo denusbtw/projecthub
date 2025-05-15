@@ -19,18 +19,10 @@ class TenantListCreateAPIView(generics.ListCreateAPIView):
     #TODO: add search by name and sub_domain
     #TODO: add ordering by created_at
 
-    # TODO: move logic into Tenant manager
     def get_queryset(self):
-        role_subquery = TenantMembership.objects.filter(
-            tenant=OuterRef("pk"), user=self.request.user
-        ).values("role")[:1]
-
-        base_queryset = Tenant.objects.annotate(role=Subquery(role_subquery))
-
-        if self.request.user.is_staff:
-            return base_queryset
-
-        return base_queryset.filter(members__user=self.request.user)
+        qs = Tenant.objects.visible_to(self.request.user)
+        qs = qs.annotate_role(self.request.user)
+        return qs
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -47,17 +39,10 @@ class TenantRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         permissions.IsAdminUser | IsTenantOwnerOrReadOnlyForCore
     ]
 
-    # TODO: move logic in Tenant manager
     def get_queryset(self):
-        role_subquery = TenantMembership.objects.filter(
-            tenant=OuterRef("pk"), user=self.request.user
-        ).values("role")[:1]
-
-        base_queryset = Tenant.objects.annotate(role=Subquery(role_subquery))
-        if self.request.user.is_staff:
-            return base_queryset
-
-        return base_queryset.filter(members__user=self.request.user)
+        qs = Tenant.objects.visible_to(self.request.user)
+        qs = qs.annotate_role(self.request.user)
+        return qs
 
     def get_serializer_class(self):
         if self.request.method in {"PUT", "PATCH"}:

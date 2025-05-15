@@ -8,6 +8,15 @@ from projecthub.core.models.base import UUIDModel, TimestampedModel
 from projecthub.tasks.models import Task
 
 
+class CommentQuerySet(models.QuerySet):
+
+    def for_tenant(self, tenant):
+        return self.filter(task__project__tenant=tenant)
+
+    def for_task(self, task_id):
+        return self.filter(task_id=task_id)
+
+
 class Comment(UUIDModel, TimestampedModel):
     task = models.ForeignKey(
         Task,
@@ -31,6 +40,8 @@ class Comment(UUIDModel, TimestampedModel):
         related_name="created_comments",
         help_text=_("Author of comment"),
     )
+
+    objects = CommentQuerySet.as_manager()
 
     class Meta:
         ordering = ["-created_at"]

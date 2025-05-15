@@ -50,7 +50,8 @@ class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
 
     # TODO: move logic into TenantMembership manager
     def get_queryset(self):
-        return TenantMembership.objects.filter(tenant=self.request.tenant)
+        qs = TenantMembership.objects.for_tenant(self.request.tenant)
+        return qs
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -65,6 +66,17 @@ class TenantMembershipRetrieveUpdateDestroyAPIView(
     generics.RetrieveUpdateDestroyAPIView
 ):
     permission_classes = [permissions.IsAuthenticated]
+
+    def check_permissions(self, request):
+        super().check_permissions(request)
+
+        self._membership = TenantMembership.objects.filter(
+            tenant=self.request.tenant,
+            user=self.request.user,
+        ).first()
+
+        if not (self.request.user.is_staff or self._membership):
+            raise exceptions.NotFound()
 
     # TODO: move logic in permission classes
     def check_object_permissions(self, request, obj):
@@ -82,16 +94,8 @@ class TenantMembershipRetrieveUpdateDestroyAPIView(
 
     # TODO: move logic into TenantMembership manager
     def get_queryset(self):
-        self._membership = TenantMembership.objects.filter(
-            tenant=self.request.tenant,
-            user=self.request.user,
-        ).first()
-
-        if self.request.user.is_staff or self._membership:
-            return TenantMembership.objects.filter(
-                tenant=self.request.tenant
-            )
-        return TenantMembership.objects.none()
+        qs = TenantMembership.objects.for_tenant(self.request.tenant)
+        return qs
 
     def get_serializer_class(self):
         if self.request.method in {"PUT", "PATCH"}:

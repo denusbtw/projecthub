@@ -1,9 +1,24 @@
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import OuterRef, Subquery
 from django.utils.translation import gettext_lazy as _
 
+from .tenant_membership import TenantMembership
 from .base import UUIDModel, TimestampedModel
+
+
+class TenantQuerySet(models.QuerySet):
+
+    def annotate_role(self, user):
+        role_subquery = TenantMembership.objects.filter(
+            tenant=OuterRef("pk"), user=user
+        ).values("role")[:1]
+        return self.annotate(role=Subquery(role_subquery))
+
+    def visible_to(self, user):
+        if user.is_staff:
+            return self
+        return self.filter(members__user=user)
 
 
 class Tenant(UUIDModel, TimestampedModel):
@@ -30,6 +45,8 @@ class Tenant(UUIDModel, TimestampedModel):
         related_name="updated_tenants",
         help_text=_("User who made the last change."),
     )
+
+    objects = TenantQuerySet.as_manager()
 
     class Meta:
         ordering = ["-created_at"]
@@ -58,73 +75,3 @@ class Tenant(UUIDModel, TimestampedModel):
             self.is_active = False
             self.updated_by = updated_by
             self.save(update_fields=["is_active", "updated_by"])
-
-
-class TenantMembership(UUIDModel, TimestampedModel):
-    class Role(models.TextChoices):
-        OWNER = ("owner", _("Owner"))
-        USER = ("user", _("User"))
-
-    tenant = models.ForeignKey(
-        "Tenant",
-        on_delete=models.CASCADE,
-        related_name="members",
-        help_text=_("Tenant that owns this member."),
-    )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="tenants",
-        help_text=_("User that is member of tenant."),
-    )
-    role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        default=Role.USER,
-        blank=True,
-        help_text=_("Role of user in tenant."),
-    )
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="created_tenant_memberships",
-        help_text=_("User who created tenant membership."),
-    )
-    updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="updated_tenant_memberships",
-        help_text=_("User who made the last change."),
-    )
-
-    class Meta:
-        ordering = ["-created_at"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["tenant", "user"], name="unique_tenant_user"
-            )
-        ]
-
-    def __str__(self):
-        role = self.get_role_display()
-        return f"{self.user.username} ({role}) in {self.tenant.name}"
-
-    def clean(self):
-        if self.role == self.Role.OWNER:
-            existing_owner = TenantMembership.objects.filter(
-                tenant=self.tenant, role=self.Role.OWNER
-            ).exclude(pk=self.pk)
-            if existing_owner.exists():
-                raise ValidationError("Each tenant can have only one owner.")
-
-    @property
-    def is_owner(self):
-        return self.role == self.Role.OWNER
-
-    @property
-    def is_user(self):
-        return self.role == self.Role.USER

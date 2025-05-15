@@ -60,11 +60,10 @@ class ProjectMembershipListCreateAPIView(generics.ListCreateAPIView):
 
         raise exceptions.PermissionDenied()
 
-    # TODO: move logic into ProjectMembership manager
     def get_queryset(self):
-        return ProjectMembership.objects.filter(
-            project__tenant=self.request.tenant, project_id=self.kwargs["project_id"]
-        ).select_related("user")
+        qs = ProjectMembership.objects.for_tenant(self.request.tenant)
+        qs = qs.for_project(self.kwargs["project_id"])
+        return qs
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -89,8 +88,9 @@ class ProjectMembershipRetrieveUpdateDestroyAPIView(
 ):
     permission_classes = [permissions.IsAuthenticated]
 
-    # TODO: move logic into ProjectMembership manager and mixin
-    def get_queryset(self):
+    def check_permissions(self, request):
+        super().check_permissions(request)
+
         self._tenant_membership = TenantMembership.objects.filter(
             tenant=self.request.tenant, user=self.request.user
         ).first()
@@ -101,17 +101,17 @@ class ProjectMembershipRetrieveUpdateDestroyAPIView(
             user=self.request.user
         ).first()
 
-        # admin, tenant owner and project member can see members
-        if (
-            self.request.user.is_staff
-            or (self._tenant_membership and self._tenant_membership.is_owner)
-            or self._project_membership
+        if not (
+                self.request.user.is_staff
+                or (self._tenant_membership and self._tenant_membership.is_owner)
+                or self._project_membership
         ):
-            return ProjectMembership.objects.filter(
-                project__tenant=self.request.tenant,
-                project_id=self.kwargs["project_id"],
-            )
-        return ProjectMembership.objects.none()
+            raise exceptions.NotFound()
+
+    def get_queryset(self):
+        qs = ProjectMembership.objects.for_tenant(self.request.tenant)
+        qs = qs.for_project(self.kwargs["project_id"])
+        return qs
 
     # TODO: move logic into permission classes
     def check_object_permissions(self, request, obj):

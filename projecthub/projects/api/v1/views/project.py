@@ -44,22 +44,11 @@ class ProjectListCreateAPIView(generics.ListCreateAPIView):
 
         raise exceptions.PermissionDenied()
 
-    # TODO: move logic into Project manager
     def get_queryset(self):
-        role_subquery = ProjectMembership.objects.filter(
-            project_id=OuterRef("pk"), user=self.request.user
-        ).values("role")[:1]
-
-        base_queryset = Project.objects.filter(tenant=self.request.tenant).annotate(
-            role=Subquery(role_subquery)
-        )
-
-        # admin and tenant owner see all projects
-        if self.request.user.is_staff or self._tenant_membership.is_owner:
-            return base_queryset
-
-        # tenant members see only projects they are members of
-        return base_queryset.filter(members__user=self.request.user)
+        qs = Project.objects.for_tenant(self.request.tenant)
+        qs = qs.visible_to(user=self.request.user, tenant=self.request.tenant)
+        qs = qs.annotate_role(self.request.user)
+        return qs
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -77,28 +66,18 @@ class ProjectListCreateAPIView(generics.ListCreateAPIView):
 class ProjectRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    #TODO: move logic into Project manager
-    def get_queryset(self):
+    def check_permissions(self, request):
+        super().check_permissions(request)
+
         self._tenant_membership = TenantMembership.objects.filter(
-            tenant=self.request.tenant, user=self.request.user
+            tenant=request.tenant, user=request.user
         ).first()
 
-        role_subquery = ProjectMembership.objects.filter(
-            project_id=OuterRef("pk"), user=self.request.user
-        ).values("role")[:1]
-
-        base_queryset = Project.objects.filter(tenant=self.request.tenant).annotate(
-            role=Subquery(role_subquery)
-        )
-
-        # admin and tenant owner see all projects
-        if (
-                self.request.user.is_staff
-                or (self._tenant_membership and self._tenant_membership.is_owner)
-        ):
-            return base_queryset
-
-        return base_queryset.filter(members__user=self.request.user)
+    def get_queryset(self):
+        qs = Project.objects.for_tenant(self.request.tenant)
+        qs = qs.visible_to(user=self.request.user, tenant=self.request.tenant)
+        qs = qs.annotate_role(self.request.user)
+        return qs
 
     # TODO: move logic into permission classes
     def check_object_permissions(self, request, obj):

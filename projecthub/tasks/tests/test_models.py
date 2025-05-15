@@ -5,6 +5,8 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.utils import timezone
 
+from projecthub.tasks.models import Task, TaskStatus
+
 
 @pytest.mark.django_db
 class TestTask:
@@ -122,3 +124,96 @@ class TestTaskStatus:
         assert not done_task_status.is_in_progress
         assert not done_task_status.is_in_review
         assert done_task_status.is_done
+
+
+@pytest.mark.django_db
+class TestTaskQuerySet:
+
+    def test_for_tenant(self, tenant_factory, project_factory, task_factory):
+        tenant1 = tenant_factory()
+        tenant2 = tenant_factory()
+        task_in_tenant1 = task_factory(project=project_factory(tenant=tenant1))
+        task_in_tenant2 = task_factory(project=project_factory(tenant=tenant2))
+        qs = Task.objects.for_tenant(tenant1)
+        assert qs.count() == 1
+        assert set(qs.values_list("pk", flat=True)) == {task_in_tenant1.pk}
+
+    def test_for_project(self, tenant, project_factory, task_factory):
+        project1 = project_factory(tenant=tenant)
+        project2 = project_factory(tenant=tenant)
+        task_in_project1 = task_factory(project=project1)
+        task_in_project2 = task_factory(project=project2)
+        qs = Task.objects.for_project(project1.pk)
+        assert qs.count() == 1
+        assert set(qs.values_list("pk", flat=True)) == {task_in_project1.pk}
+
+    def test_for_responsible(self, user, task_factory):
+        task1 = task_factory(responsible=user)
+        task2 = task_factory()
+        qs = Task.objects.for_responsible(user)
+        assert qs.count() == 1
+        assert set(qs.values_list("pk", flat=True)) == {task1.pk}
+
+    def test_visible_to_returns_all_tasks_if_admin(
+            self, admin_user, project, tenant, task_factory
+    ):
+        task_factory.create_batch(3, project=project)
+        qs = Task.objects.visible_to(admin_user, project.pk, tenant)
+        assert qs.count() == 3
+
+    def test_visible_to_returns_all_tasks_if_tenant_owner(
+            self, tenant_owner, project, tenant, task_factory
+    ):
+        task_factory.create_batch(3, project=project)
+        qs = Task.objects.visible_to(
+            user=tenant_owner.user,
+            tenant=tenant,
+            project_id=project.pk
+        )
+        assert qs.count() == 3
+
+    def test_visible_to_returns_all_tasks_if_project_owner(
+            self, project_owner, project, tenant, task_factory
+    ):
+        task_factory.create_batch(3, project=project)
+        qs = Task.objects.visible_to(
+            user=project_owner.user,
+            tenant=tenant,
+            project_id=project.pk
+        )
+        assert qs.count() == 3
+
+    def test_visible_to_returns_only_tasks_user_is_responsible_for_if_project_user(
+            self, user, project_user, project, tenant, task_factory
+    ):
+        task1 = task_factory(project=project, responsible=project_user.user)
+        task2 = task_factory(project=project)
+        qs = Task.objects.visible_to(
+            user=project_user.user,
+            tenant=tenant,
+            project_id=project.pk
+        )
+        assert set(qs.values_list("pk", flat=True)) == {task1.pk}
+
+    def test_visible_to_returns_empty_qs(self, user, project, tenant, task_factory):
+        """Returns empty queryset if user is nor admin nor tenant owner
+         nor project owner nor project user"""
+        task_factory(project=project)
+        qs = Task.objects.visible_to(
+            user=user,
+            tenant=tenant,
+            project_id=project.pk
+        )
+        assert not qs.exists()
+
+
+@pytest.mark.django_db
+class TestTaskStatusQuerySet:
+
+    def test_for_tenant(self, tenant_factory, task_status_factory):
+        tenant1 = tenant_factory()
+        tenant2 = tenant_factory()
+        task_status_in_tenant1 = task_status_factory(tenant=tenant1)
+        task_status_in_tenant2 = task_status_factory(tenant=tenant2)
+        qs = TaskStatus.objects.for_tenant(tenant1)
+        assert set(qs.values_list("pk", flat=True)) == {task_status_in_tenant1.pk}

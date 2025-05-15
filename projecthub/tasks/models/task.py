@@ -3,11 +3,43 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils import timezone
-
 from django.utils.translation import gettext_lazy as _
 
-from projecthub.core.models import UUIDModel, TimestampedModel, Tenant
-from projecthub.projects.models import Project
+from projecthub.core.models import UUIDModel, TimestampedModel, TenantMembership
+from projecthub.projects.models import ProjectMembership, Project
+from .task_status import TaskStatus
+
+
+class TaskQuerySet(models.QuerySet):
+    def for_tenant(self, tenant):
+        return self.filter(project__tenant=tenant)
+
+    def for_project(self, project_id):
+        return self.filter(project_id=project_id)
+
+    def for_responsible(self, user):
+        return self.filter(responsible=user)
+
+    def visible_to(self, user, tenant, project_id):
+        if user.is_staff:
+            return self
+
+        tenant_membership = TenantMembership.objects.filter(
+            tenant=tenant, user=user
+        ).first()
+        if tenant_membership and tenant_membership.is_owner:
+            return self
+
+        project_membership = ProjectMembership.objects.filter(
+            project_id=project_id, user=user
+        ).first()
+        if project_membership and project_membership.is_staff:
+            return self
+
+        if project_membership and project_membership.is_user:
+            return self.for_responsible(user)
+
+        return self.none()
 
 
 class Task(UUIDModel, TimestampedModel):
@@ -68,6 +100,8 @@ class Task(UUIDModel, TimestampedModel):
         related_name="updated_tasks",
         help_text=_("User who made the last change."),
     )
+
+    objects = TaskQuerySet.as_manager()
 
     class Meta:
         ordering = ["priority"]
@@ -143,67 +177,3 @@ class Task(UUIDModel, TimestampedModel):
     @property
     def is_in_review(self):
         return self.status and self.status.is_in_review
-
-
-class TaskStatus(UUIDModel, TimestampedModel):
-    tenant = models.ForeignKey(
-        Tenant,
-        on_delete=models.CASCADE,
-        related_name="task_statuses",
-        help_text=_("Tenant that owns this task status."),
-    )
-    name = models.CharField(max_length=255, help_text=_("Name of task status."))
-    code = models.CharField(max_length=50, unique=False, blank=True, default="")
-    order = models.PositiveIntegerField(help_text=_("Order of task status."))
-    is_default = models.BooleanField(
-        default=False,
-        help_text=_(
-            "Determines whether task status is default (todo, done, in review, etc)."
-        ),
-    )
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="created_task_statuses",
-        help_text=_("User who created task status."),
-    )
-    updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="updated_task_statuses",
-        help_text=_("User who made the last change."),
-    )
-
-    class Meta:
-        ordering = ["order"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["tenant", "order"], name="unique_task_status_order_for_tenant"
-            ),
-            models.UniqueConstraint(
-                fields=["tenant", "code"], name="unique_task_status_code_for_tenant"
-            ),
-        ]
-
-    def __str__(self):
-        return f"{self.name} ({self.order}) in {self.tenant.name}"
-
-    @property
-    def is_todo(self):
-        return self.code == "todo"
-
-    @property
-    def is_in_progress(self):
-        return self.code == "in_progress"
-
-    @property
-    def is_in_review(self):
-        return self.code == "in_review"
-
-    @property
-    def is_done(self):
-        return self.code == "done"

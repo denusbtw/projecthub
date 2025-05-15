@@ -45,9 +45,8 @@ class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
 
         raise exceptions.PermissionDenied()
 
-    # TODO: move into TaskStatus manager
     def get_queryset(self):
-        return TaskStatus.objects.filter(tenant=self.request.tenant)
+        return TaskStatus.objects.for_tenant(self.request.tenant)
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -65,16 +64,18 @@ class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
 class TaskStatusRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    # TODO: move into Task Status manager
-    def get_queryset(self):
+    def check_permissions(self, request):
+        super().check_permissions(request)
+
         self._tenant_membership = TenantMembership.objects.filter(
             tenant=self.request.tenant, user=self.request.user
         ).first()
 
-        # admin and tenant member see all task statuses
-        if self.request.user.is_staff or self._tenant_membership:
-            return TaskStatus.objects.filter(tenant=self.request.tenant)
-        return TaskStatus.objects.none()
+        if not (self.request.user.is_staff or self._tenant_membership):
+            raise exceptions.NotFound()
+
+    def get_queryset(self):
+        return TaskStatus.objects.for_tenant(tenant=self.request.tenant)
 
     # TODO: move into permission classes
     def check_object_permissions(self, request, obj):

@@ -1,7 +1,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from projecthub.core.models import TenantMembership
+from projecthub.core.models import TenantMembership, Tenant
 
 
 @pytest.mark.django_db
@@ -74,3 +74,50 @@ class TestTenantMembership:
     ):
         membership = tenant_membership_factory(role=TenantMembership.Role.OWNER)
         membership.full_clean()
+
+
+@pytest.mark.django_db
+class TestTenantQuerySet:
+
+    def test_annotate_role_none_if_not_member(self, user, tenant_factory):
+        tenant = tenant_factory()
+        qs = Tenant.objects.annotate_role(user)
+        tenant = qs.get(pk=tenant.pk)
+        assert tenant.role is None
+
+    def test_annotate_role_not_none_if_member(
+            self, user, tenant_factory, tenant_membership_factory
+    ):
+        tenant = tenant_factory()
+        membership = tenant_membership_factory(tenant=tenant, user=user)
+        qs = Tenant.objects.annotate_role(user)
+        tenant = qs.get(pk=tenant.pk)
+        assert tenant.role == membership.role
+
+    def test_visible_to_returns_all_if_staff(self, admin_user, tenant_factory):
+        tenant_factory.create_batch(3)
+        qs = Tenant.objects.visible_to(admin_user)
+        assert qs.count() == 3
+
+    def test_visible_to_returns_only_tenants_user_is_member_of(
+            self, user, tenant_factory, tenant_membership_factory
+    ):
+        tenant = tenant_factory()
+        another_tenant = tenant_factory()
+        tenant_membership_factory(tenant=tenant, user=user)
+        qs = Tenant.objects.visible_to(user)
+        assert qs.count() == 1
+        assert set(qs.values_list("pk", flat=True)) == {tenant.pk}
+
+
+@pytest.mark.django_db
+class TestTenantMembershipQuerySet:
+
+    def test_for_tenant(self, tenant_factory, tenant_membership_factory):
+        tenant1 = tenant_factory()
+        tenant2 = tenant_factory()
+        tenant1_membership = tenant_membership_factory(tenant=tenant1)
+        tenant2_membership = tenant_membership_factory(tenant=tenant2)
+        qs = TenantMembership.objects.for_tenant(tenant1)
+        assert qs.count() == 1
+        assert set(qs.values_list("pk", flat=True)) == {tenant1_membership.pk}

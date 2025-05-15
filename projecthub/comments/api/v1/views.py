@@ -43,11 +43,10 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
 
         super().initial(request, *args, **kwargs)
 
-    # TODO: move logic into Comment manager
     def get_queryset(self):
-        return Comment.objects.filter(
-            task__project__tenant=self.request.tenant, task_id=self.kwargs["task_id"]
-        )
+        qs = Comment.objects.for_tenant(self.request.tenant)
+        qs = qs.for_task(self.kwargs["task_id"])
+        return qs
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -89,12 +88,10 @@ class CommentDestroyAPIView(generics.DestroyAPIView):
 
         super().initial(request, *args, **kwargs)
 
-    # TODO: move logic into Comment manager
     def get_queryset(self):
-        return Comment.objects.filter(
-            task__project__tenant=self.request.tenant,
-            task_id=self.kwargs["task_id"]
-        )
+        qs = Comment.objects.for_tenant(self.request.tenant)
+        qs = qs.for_task(self.kwargs["task_id"])
+        return qs
 
     # TODO: move into permission classes
     def check_object_permissions(self, request, obj):

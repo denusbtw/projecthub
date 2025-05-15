@@ -214,3 +214,85 @@ class TestProjectMembership:
         assert not membership.is_user
         assert not membership.is_guest
         assert membership.is_reader
+
+
+@pytest.mark.django_db
+class TestProjectQuerySet:
+
+    def test_annotate_role_none_if_not_member(self, user, project_factory):
+        project = project_factory()
+        qs = Project.objects.annotate_role(user)
+        project = qs.get(pk=project.pk)
+        assert project.role is None
+
+    def test_annotate_role_not_none_if_member(
+            self, user, project_factory, project_membership_factory
+    ):
+        project = project_factory()
+        membership = project_membership_factory(project=project, user=user)
+        qs = Project.objects.annotate_role(user)
+        project = qs.get(pk=project.pk)
+        assert project.role == membership.role
+
+    def test_for_tenant(self, project_factory, tenant_factory):
+        tenant1 = tenant_factory()
+        tenant2 = tenant_factory()
+        project_in_tenant1 = project_factory(tenant=tenant1)
+        project_in_tenant2 = project_factory(tenant=tenant2)
+
+        qs = Project.objects.for_tenant(tenant1)
+        assert qs.count() == 1
+        assert set(qs.values_list("pk", flat=True)) == {project_in_tenant1.pk}
+
+    def test_visible_to_returns_all_projects_under_tenant_if_admin(
+            self, admin_user, project_factory, tenant
+    ):
+        project_factory.create_batch(3, tenant=tenant)
+        qs = Project.objects.visible_to(admin_user, tenant)
+        assert qs.count() == 3
+
+    def test_visible_to_returns_all_projects_under_tenant_if_tenant_owner(
+            self, tenant_owner, tenant, project_factory
+    ):
+        project_factory.create_batch(3, tenant=tenant)
+        qs = Project.objects.visible_to(tenant_owner.user, tenant)
+        assert qs.count() == 3
+
+    def test_visible_to_returns_only_projects_user_is_member_of(
+            self, user, project_factory, project_membership_factory, tenant
+    ):
+        project1 = project_factory(tenant=tenant)
+        project2 = project_factory(tenant=tenant)
+        project_membership_factory(project=project1, user=user)
+        qs = Project.objects.visible_to(user, tenant)
+        assert qs.count() == 1
+        assert set(qs.values_list("pk", flat=True)) == {project1.pk}
+
+
+@pytest.mark.django_db
+class TestProjectMembershipQuerySet:
+
+    def test_for_tenant(
+            self, tenant_factory, project_factory, project_membership_factory
+    ):
+        tenant1 = tenant_factory()
+        tenant2 = tenant_factory()
+        project_membership_factory.create_batch(
+            3, project=project_factory(tenant=tenant1)
+        )
+        project_membership_factory.create_batch(
+            2, project=project_factory(tenant=tenant2)
+        )
+        qs = ProjectMembership.objects.for_tenant(tenant1)
+        assert qs.count() == 3
+
+    def test_for_project(
+            self, tenant, project_factory, project_membership_factory
+    ):
+        project1 = project_factory(tenant=tenant)
+        project2 = project_factory(tenant=tenant)
+        project_membership_factory.create_batch(3, project=project1)
+        project_membership_factory.create_batch(2, project=project2)
+        qs = ProjectMembership.objects.for_project(project1.pk)
+        assert qs.count() == 3
+

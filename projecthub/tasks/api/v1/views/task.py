@@ -1,5 +1,4 @@
 from rest_framework import generics, exceptions, permissions
-from rest_framework.generics import get_object_or_404
 
 from projecthub.core.models import TenantMembership
 from projecthub.projects.models import ProjectMembership
@@ -56,24 +55,15 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
 
         raise exceptions.PermissionDenied()
 
-    # TODO: move logic into Task manager
     def get_queryset(self):
-        base_queryset = Task.objects.filter(
-            project__tenant=self.request.tenant, project_id=self.kwargs["project_id"]
+        qs = Task.objects.for_tenant(self.request.tenant)
+        qs = qs.for_project(self.kwargs["project_id"])
+        qs = qs.visible_to(
+            user=self.request.user,
+            tenant=self.request.tenant,
+            project_id=self.kwargs["project_id"]
         )
-
-        # admin, tenant owner and project staff see all tasks
-        if (
-            self.request.user.is_staff
-            or (self._tenant_membership and self._tenant_membership.is_owner)
-            or (self._project_membership and self._project_membership.is_staff)
-        ):
-            return base_queryset
-
-        # project user see only tasks he is responsible for
-        if self._project_membership and self._project_membership.is_user:
-            return base_queryset.filter(responsible=self.request.user)
-        return Task.objects.none()
+        return qs
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -91,36 +81,15 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
 class TaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    # TODO: move into Task manager
     def get_queryset(self):
-        return Task.objects.filter(
-            project__tenant=self.request.tenant,
-            project_id=self.kwargs["project_id"],
+        qs = Task.objects.for_tenant(self.request.tenant)
+        qs = qs.for_project(self.kwargs["project_id"])
+        qs = qs.visible_to(
+            user=self.request.user,
+            tenant=self.request.tenant,
+            project_id=self.kwargs["project_id"]
         )
-
-    # TODO: move into mixin?
-    def get_object(self):
-        self._tenant_membership = TenantMembership.objects.filter(
-            tenant=self.request.tenant, user=self.request.user
-        ).first()
-        self._project_membership = ProjectMembership.objects.filter(
-            project_id=self.kwargs["project_id"], user=self.request.user
-        ).first()
-
-        task = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
-        self._is_task_responsible = (self.request.user.pk == task.responsible_id)
-
-        # only admin, tenant owner, project staff or task responsible have access
-        if not (
-                self.request.user.is_staff
-                or (self._tenant_membership and self._tenant_membership.is_owner)
-                or (self._project_membership and self._project_membership.is_staff)
-                or self._is_task_responsible
-        ):
-            raise exceptions.NotFound()
-
-        self.check_object_permissions(self.request, task)
-        return task
+        return qs
 
     # TODO: move into permission classes
     def check_object_permissions(self, request, obj):
@@ -128,6 +97,7 @@ class TaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
             return
 
         # task responsible can't delete task, only update
+        self._is_task_responsible = (obj.responsible_id == request.user.pk)
         if request.method == "DELETE" and self._is_task_responsible:
             raise exceptions.PermissionDenied()
 
