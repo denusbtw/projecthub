@@ -8,14 +8,15 @@ faker = Faker()
 
 
 class UserFactory(factory.django.DjangoModelFactory):
-    username = factory.Faker("user_name")
-    email = factory.Faker("email")
+    username = factory.Sequence(lambda n: f"user_{n}")
+    email = factory.LazyAttribute(lambda o: f"{o.username}@example.com")
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
     date_joined = factory.LazyFunction(
         lambda: timezone.make_aware(faker.date_time_this_year())
     )
 
+    # TODO: test
     @factory.post_generation
     def password(self, create, extracted, **kwargs):
         password = (

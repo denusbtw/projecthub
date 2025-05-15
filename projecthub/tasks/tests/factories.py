@@ -12,7 +12,7 @@ from projecthub.core.tests.factories import TenantFactory
 
 class TaskStatusFactory(factory.django.DjangoModelFactory):
     tenant = factory.SubFactory(TenantFactory)
-    name = factory.Faker("word")
+    name = factory.Sequence(lambda n: f"name_{n}")
     order = factory.Sequence(lambda n: n + 1)
     is_default = False
     created_by = factory.SubFactory(UserFactory)
