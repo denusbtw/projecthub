@@ -1,4 +1,4 @@
-from .task import TaskListCreateAPIView, TaskRetrieveUpdateDestroyAPIView
-from .task_status import (
-    TaskStatusListCreateAPIView, TaskStatusRetrieveUpdateDestroyAPIView
+from .board import (
+    BoardListCreateAPIView, BoardRetrieveUpdateDestroyAPIView
 )
+from .task import TaskListCreateAPIView, TaskRetrieveUpdateDestroyAPIView

@@ -1,16 +1,15 @@
 import factory
 from django.utils.text import slugify
 
-from ..models import Task, TaskStatus
+from projecthub.core.models import TenantMembership
+from projecthub.core.tests.factories import TenantFactory
 from projecthub.projects.models import ProjectMembership
 from projecthub.projects.tests.factories import ProjectFactory
 from projecthub.users.tests.factories import UserFactory
-from projecthub.core.models import TenantMembership
-from projecthub.core.tests.factories import TenantFactory
+from ..models import Task, Board
 
 
-
-class TaskStatusFactory(factory.django.DjangoModelFactory):
+class BoardFactory(factory.django.DjangoModelFactory):
     tenant = factory.SubFactory(TenantFactory)
     name = factory.Sequence(lambda n: f"name_{n}")
     order = factory.Sequence(lambda n: n + 1)
@@ -19,7 +18,7 @@ class TaskStatusFactory(factory.django.DjangoModelFactory):
     updated_by = factory.SubFactory(UserFactory)
 
     class Meta:
-        model = TaskStatus
+        model = Board
 
     # TODO: test
     @factory.lazy_attribute
@@ -30,7 +29,7 @@ class TaskStatusFactory(factory.django.DjangoModelFactory):
 class TaskFactory(factory.django.DjangoModelFactory):
     name = factory.Faker("sentence", nb_words=5)
     project = factory.SubFactory(ProjectFactory)
-    status = factory.SubFactory(TaskStatusFactory)
+    board = factory.SubFactory(BoardFactory)
     priority = factory.Faker("pyint", min_value=0, max_value=10)
     description = factory.Faker("paragraph", nb_sentences=3)
     responsible = factory.SubFactory(UserFactory)

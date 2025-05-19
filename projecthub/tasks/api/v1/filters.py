@@ -2,7 +2,7 @@ from django.forms import CharField
 from django_filters import rest_framework as filters
 
 from projecthub.core.filters import MultipleValueFilter
-from ...models import Task, TaskStatus
+from ...models import Task, Board
 
 
 class TaskFilterSet(filters.FilterSet):
@@ -45,11 +45,11 @@ class TaskFilterSet(filters.FilterSet):
         )
 
 
-class TaskStatusFilterSet(filters.FilterSet):
+class BoardFilterSet(filters.FilterSet):
     creator = filters.CharFilter(
         field_name="created_by__username", lookup_expr="icontains"
     )
 
     class Meta:
-        model = TaskStatus
+        model = Board
         fields = ("is_default", "creator")

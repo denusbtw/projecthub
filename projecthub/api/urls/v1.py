@@ -15,8 +15,8 @@ from projecthub.projects.api.v1.views import (
 from projecthub.tasks.api.v1.views import (
     TaskListCreateAPIView,
     TaskRetrieveUpdateDestroyAPIView,
-    TaskStatusListCreateAPIView,
-    TaskStatusRetrieveUpdateDestroyAPIView,
+    BoardListCreateAPIView,
+    BoardRetrieveUpdateDestroyAPIView,
 )
 
 app_name = "v1"
@@ -64,12 +64,12 @@ urlpatterns = [
         name="task_detail"
     ),
     path(
-        "task-statuses/", TaskStatusListCreateAPIView.as_view(), name="task_status_list"
+        "boards/", BoardListCreateAPIView.as_view(), name="board_list"
     ),
     path(
-        "task-statuses/<uuid:pk>/",
-        TaskStatusRetrieveUpdateDestroyAPIView.as_view(),
-        name="task_status_detail"
+        "boards/<uuid:pk>/",
+        BoardRetrieveUpdateDestroyAPIView.as_view(),
+        name="board_detail"
     ),
     path(
         "tasks/<uuid:task_id>/comments/",

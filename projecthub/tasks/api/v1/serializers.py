@@ -1,14 +1,14 @@
 from rest_framework import serializers
 
 from projecthub.core.api.v1.serializers.base import UserNestedSerializer
-from projecthub.tasks.models import Task, TaskStatus
+from projecthub.tasks.models import Task, Board
 
 
 # ==== Task serializers ==== #
 class BaseTaskReadSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
-    status = serializers.SerializerMethodField()
+    board = serializers.SerializerMethodField()
     priority = serializers.IntegerField()
     start_date = serializers.DateTimeField()
     end_date = serializers.DateTimeField()
@@ -16,8 +16,8 @@ class BaseTaskReadSerializer(serializers.Serializer):
     created_by = UserNestedSerializer()
     created_at = serializers.DateTimeField()
 
-    def get_status(self, obj):
-        return getattr(obj.status, "name", None)
+    def get_board(self, obj):
+        return getattr(obj.board, "name", None)
 
 
 class TaskListSerializer(BaseTaskReadSerializer):
@@ -34,7 +34,7 @@ class BaseTaskWriteSerializer(serializers.ModelSerializer):
         model = Task
         fields = (
             "name",
-            "status",
+            "board",
             "priority",
             "description",
             "responsible",
@@ -53,16 +53,12 @@ class TaskUpdateSerializer(BaseTaskWriteSerializer):
     class Meta(BaseTaskWriteSerializer.Meta):
         extra_kwargs = {"name": {"required": False}}
 
-# TODO
+#TODO
 # create serializer for task responsible (he can update only status)
-# if task status is 'Todo', he can set status to None (revoke from task) or 'In Progress'
-# if task status is 'In Progress', he can set status to None(revoke), 'Todo', or 'In Review'
-# if task status is 'In Review', he can set status to None(revoke), 'Todo', or 'In progress'
-# if task status 'Done', he can't update status
 
 
-# ==== TaskStatus serializers ==== #
-class BaseTaskStatusReadSerializer(serializers.Serializer):
+# ==== Board serializers ==== #
+class BaseBoardReadSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
     code = serializers.CharField()
@@ -70,27 +66,27 @@ class BaseTaskStatusReadSerializer(serializers.Serializer):
     is_default = serializers.BooleanField()
 
 
-class TaskStatusListSerializer(BaseTaskStatusReadSerializer):
+class BoardListSerializer(BaseBoardReadSerializer):
     pass
 
 
-class TaskStatusDetailSerializer(BaseTaskStatusReadSerializer):
+class BoardDetailSerializer(BaseBoardReadSerializer):
     pass
 
 
-class BaseTaskStatusWriteSerializer(serializers.ModelSerializer):
+class BaseBoardWriteSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TaskStatus
+        model = Board
         fields = ("name", "order")
 
 
-class TaskStatusCreateSerializer(BaseTaskStatusWriteSerializer):
+class BoardCreateSerializer(BaseBoardWriteSerializer):
     def to_representation(self, instance):
-        return TaskStatusListSerializer(instance, context=self.context).data
+        return BoardListSerializer(instance, context=self.context).data
 
 
-class TaskStatusUpdateSerializer(BaseTaskStatusWriteSerializer):
-    class Meta(BaseTaskStatusWriteSerializer.Meta):
+class BoardUpdateSerializer(BaseBoardWriteSerializer):
+    class Meta(BaseBoardWriteSerializer.Meta):
         extra_kwargs = {
             "name": {"required": False},
             "order": {"required": False}

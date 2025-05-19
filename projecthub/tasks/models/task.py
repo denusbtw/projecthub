@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from projecthub.core.models import UUIDModel, TimestampedModel, TenantMembership
 from projecthub.projects.models import ProjectMembership, Project
-from .task_status import TaskStatus
+from .board import Board
 
 
 class TaskQuerySet(models.QuerySet):
@@ -50,13 +50,13 @@ class Task(UUIDModel, TimestampedModel):
         related_name="tasks",
         help_text=_("Project to which task belongs."),
     )
-    status = models.ForeignKey(
-        "TaskStatus",
+    board = models.ForeignKey(
+        "Board",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="tasks",
-        help_text=_("Status of task."),
+        help_text=_("Board of task."),
     )
     priority = models.IntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(10)],
@@ -132,8 +132,8 @@ class Task(UUIDModel, TimestampedModel):
         ]
 
     def __str__(self):
-        status_name = getattr(self.status, "name", "No status")
-        return f"{self.name} ({status_name}) in {self.project.name}"
+        board_name = getattr(self.board, "name", "No status")
+        return f"{self.name} ({board_name}) in {self.project.name}"
 
     @property
     def duration(self):
@@ -141,28 +141,28 @@ class Task(UUIDModel, TimestampedModel):
             return self.end_date - self.start_date
         return None
 
-    def set_status(self, code: str, updated_by):
+    def set_board(self, code: str, updated_by):
         if not updated_by:
             raise ValidationError("updated_by is required.")
 
-        status = TaskStatus.objects.filter(
+        board = Board.objects.filter(
             tenant_id=self.project.tenant_id, code=code
         ).first()
 
-        if not status:
-            raise ValidationError(f"No status with code '{code}' found for tenant.")
+        if not board:
+            raise ValidationError(f"No board with code '{code}' found for tenant.")
 
         now = timezone.now()
 
-        self.status = status
+        self.board = board
         self.updated_by = updated_by
         self.updated_at = now
 
-        if status.is_done:
+        if board.is_done:
             self.close_date = now
 
-        fields = ["status", "updated_by", "updated_at"]
-        if status.is_done:
+        fields = ["board", "updated_by", "updated_at"]
+        if board.is_done:
             fields.append("close_date")
 
         self.save(update_fields=fields)
@@ -171,24 +171,24 @@ class Task(UUIDModel, TimestampedModel):
         if not updated_by:
             raise ValidationError("updated_by is required.")
 
-        self.status = None
+        self.board = None
         self.responsible = None
         self.updated_by = updated_by
         self.updated_at = timezone.now()
-        self.save(update_fields=["status", "responsible", "updated_by", "updated_at"])
+        self.save(update_fields=["board", "responsible", "updated_by", "updated_at"])
 
     @property
     def is_todo(self):
-        return self.status and self.status.is_todo
+        return self.board and self.board.is_todo
 
     @property
     def is_done(self):
-        return self.status and self.status.is_done
+        return self.board and self.board.is_done
 
     @property
     def is_in_progress(self):
-        return self.status and self.status.is_in_progress
+        return self.board and self.board.is_in_progress
 
     @property
     def is_in_review(self):
-        return self.status and self.status.is_in_review
+        return self.board and self.board.is_in_review

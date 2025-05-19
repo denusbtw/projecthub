@@ -6,7 +6,7 @@ from projecthub.core.models import TenantMembership
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
 from projecthub.projects.models import ProjectMembership
 from projecthub.projects.tests.factories import ProjectFactory, ProjectMembershipFactory
-from projecthub.tasks.tests.factories import TaskFactory, TaskStatusFactory
+from projecthub.tasks.tests.factories import TaskFactory, BoardFactory
 from projecthub.users.tests.factories import UserFactory
 
 
@@ -120,28 +120,28 @@ def task(db, project):
 
 
 @pytest.fixture
-def task_status_factory():
-    return TaskStatusFactory
+def board_factory():
+    return BoardFactory
 
 
 @pytest.fixture
-def todo_task_status(db, tenant):
-    return TaskStatusFactory(tenant=tenant, name="To Do", code="todo")
+def todo_board(db, tenant):
+    return BoardFactory(tenant=tenant, name="To Do", code="todo")
 
 
 @pytest.fixture
-def in_progress_task_status(db, tenant):
-    return TaskStatusFactory(tenant=tenant, name="In progress", code="in_progress")
+def in_progress_board(db, tenant):
+    return BoardFactory(tenant=tenant, name="In progress", code="in_progress")
 
 
 @pytest.fixture
-def in_review_task_status(db, tenant):
-    return TaskStatusFactory(tenant=tenant, name="In review", code="in_review")
+def in_review_board(db, tenant):
+    return BoardFactory(tenant=tenant, name="In review", code="in_review")
 
 
 @pytest.fixture
-def done_task_status(db, tenant):
-    return TaskStatusFactory(tenant=tenant, name="Done", code="done")
+def done_board(db, tenant):
+    return BoardFactory(tenant=tenant, name="Done", code="done")
 
 
 @pytest.fixture

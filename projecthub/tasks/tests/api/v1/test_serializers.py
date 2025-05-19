@@ -1,29 +1,29 @@
 import pytest
 
-from projecthub.conftest import todo_task_status
+from projecthub.conftest import todo_board
 from projecthub.tasks.api.v1.serializers import (
     TaskListSerializer,
     TaskDetailSerializer,
     TaskCreateSerializer,
     TaskUpdateSerializer,
-    TaskStatusCreateSerializer,
-    TaskStatusListSerializer,
-    TaskStatusUpdateSerializer,
+    BoardCreateSerializer,
+    BoardListSerializer,
+    BoardUpdateSerializer,
 )
 
 
 @pytest.mark.django_db
 class TestTaskListSerializer:
 
-    def test_status_is_none(self, task_factory):
-        task = task_factory(status=None)
+    def test_board_is_none(self, task_factory):
+        task = task_factory(board=None)
         serializer = TaskListSerializer(task)
-        assert serializer.data["status"] is None
+        assert serializer.data["board"] is None
 
-    def test_status_is_not_none(self, task_factory, todo_task_status):
-        task = task_factory(status=todo_task_status)
+    def test_status_is_not_none(self, task_factory, todo_board):
+        task = task_factory(board=todo_board)
         serializer = TaskListSerializer(task)
-        assert serializer.data["status"] == todo_task_status.name
+        assert serializer.data["board"] == todo_board.name
         
     def test_create_by_is_nested_serializer(self, task_factory, user):
         task = task_factory(created_by=user)
@@ -34,15 +34,15 @@ class TestTaskListSerializer:
 @pytest.mark.django_db
 class TestTaskDetailSerializer:
 
-    def test_status_is_none(self, task_factory):
-        task = task_factory(status=None)
+    def test_board_is_none(self, task_factory):
+        task = task_factory(board=None)
         serializer = TaskDetailSerializer(task)
-        assert serializer.data["status"] is None
+        assert serializer.data["board"] is None
 
-    def test_status_is_not_none(self, task_factory, todo_task_status):
-        task = task_factory(status=todo_task_status)
+    def test_board_is_not_none(self, task_factory, todo_board):
+        task = task_factory(board=todo_board)
         serializer = TaskDetailSerializer(task)
-        assert serializer.data["status"] == todo_task_status.name
+        assert serializer.data["board"] == todo_board.name
 
     def test_create_by_is_nested_serializer(self, task_factory, user):
         task = task_factory(created_by=user)
@@ -80,18 +80,18 @@ def data():
 
 
 @pytest.mark.django_db
-class TestTaskStatusCreateSerializer:
+class TestBoardCreateSerializer:
 
     def test_to_representation_matches_list_serializer_matches(self, tenant, data):
-        serializer = TaskStatusCreateSerializer(data=data)
+        serializer = BoardCreateSerializer(data=data)
         assert serializer.is_valid(), serializer.errors
-        task_status = serializer.save(tenant=tenant)
-        assert serializer.data == TaskStatusListSerializer(task_status).data
+        board = serializer.save(tenant=tenant)
+        assert serializer.data == BoardListSerializer(board).data
 
 
 @pytest.mark.django_db
-class TestTaskStatusUpdateSerializer:
+class TestBoardUpdateSerializer:
 
-    def test_no_error_if_empty_data(self, todo_task_status, data):
-        serializer = TaskStatusUpdateSerializer(todo_task_status, data={})
+    def test_no_error_if_empty_data(self, todo_board, data):
+        serializer = BoardUpdateSerializer(todo_board, data={})
         assert serializer.is_valid(), serializer.errors

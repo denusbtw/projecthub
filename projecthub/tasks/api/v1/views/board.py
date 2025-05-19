@@ -2,29 +2,29 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, exceptions, permissions, filters
 
 from projecthub.core.models import TenantMembership
-from projecthub.tasks.models import TaskStatus
-from .pagination import TaskStatusPagination
-from ..filters import TaskStatusFilterSet
+from projecthub.tasks.models import Board
+from .pagination import BoardPagination
+from ..filters import BoardFilterSet
 from ..serializers import (
-    TaskStatusCreateSerializer,
-    TaskStatusListSerializer,
-    TaskStatusUpdateSerializer,
-    TaskStatusDetailSerializer,
+    BoardCreateSerializer,
+    BoardListSerializer,
+    BoardUpdateSerializer,
+    BoardDetailSerializer,
 )
 
 
-class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
-    pagination_class = TaskStatusPagination
+class BoardListCreateAPIView(generics.ListCreateAPIView):
+    pagination_class = BoardPagination
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
         filters.OrderingFilter
     ]
-    filterset_class = TaskStatusFilterSet
+    filterset_class = BoardFilterSet
     search_fields = ["name", "code"]
     ordering_fields = ["name", "order", "created_at", "is_default"]
 
-    #TODO: move into mixin
+    #TODO:
     def initial(self, request, *args, **kwargs):
         if not self.request.user.is_authenticated:
             raise exceptions.PermissionDenied()
@@ -53,12 +53,12 @@ class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
         raise exceptions.PermissionDenied()
 
     def get_queryset(self):
-        return TaskStatus.objects.for_tenant(self.request.tenant)
+        return Board.objects.for_tenant(self.request.tenant)
 
     def get_serializer_class(self):
         if self.request.method == "POST":
-            return TaskStatusCreateSerializer
-        return TaskStatusListSerializer
+            return BoardCreateSerializer
+        return BoardListSerializer
 
     def perform_create(self, serializer):
         serializer.save(
@@ -68,8 +68,12 @@ class TaskStatusListCreateAPIView(generics.ListCreateAPIView):
         )
 
 
-class TaskStatusRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+class BoardRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
+
+    # if task board is 'Todo', he can set board to None (revoke from task) or 'In Progress'
+    # if task board is 'In Progress', he can set board to None(revoke), 'Todo', or 'In Review'
+    # if task board 'Done' or 'In Review', he can't update board
 
     def check_permissions(self, request):
         super().check_permissions(request)
@@ -82,7 +86,7 @@ class TaskStatusRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
             raise exceptions.NotFound()
 
     def get_queryset(self):
-        return TaskStatus.objects.for_tenant(tenant=self.request.tenant)
+        return Board.objects.for_tenant(tenant=self.request.tenant)
 
     # TODO: move into permission classes
     def check_object_permissions(self, request, obj):
@@ -100,8 +104,8 @@ class TaskStatusRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
 
     def get_serializer_class(self):
         if self.request.method in {"PUT", "PATCH"}:
-            return TaskStatusUpdateSerializer
-        return TaskStatusDetailSerializer
+            return BoardUpdateSerializer
+        return BoardDetailSerializer
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
