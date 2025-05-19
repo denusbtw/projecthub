@@ -1,5 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, exceptions, permissions, filters
+from rest_framework import generics, filters, permissions
 
 from projecthub.core.api.v1.filters import TenantMembershipFilterSet
 from projecthub.core.api.v1.serializers import (
@@ -8,11 +8,32 @@ from projecthub.core.api.v1.serializers import (
     TenantMembershipUpdateSerializer,
     TenantMembershipDetailSerializer,
 )
+from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.core.api.v1.views.pagination import TenantMembershipPagination
 from projecthub.core.models import TenantMembership
+from ...permissions import IsTenantOwnerPermission, ReadOnlyPermission, \
+    IsSelfDeletePermission
+from ...policies import (
+    IsAuthenticatedPolicy,
+    IsAdminUserPolicy,
+    IsTenantMemberPolicy
+)
 
 
-class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
+class TenantMembershipListCreateAPIView(SecureGenericAPIView,
+                                        generics.ListCreateAPIView):
+    policy_classes = [
+        IsAuthenticatedPolicy
+        & (IsAdminUserPolicy | IsTenantMemberPolicy)
+    ]
+    permission_classes = [
+        permissions.IsAuthenticated
+        & (
+            permissions.IsAdminUser
+            | IsTenantOwnerPermission
+            | ReadOnlyPermission
+        )
+    ]
     pagination_class = TenantMembershipPagination
     filter_backends = [
         DjangoFilterBackend,
@@ -22,38 +43,6 @@ class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
     filterset_class = TenantMembershipFilterSet
     search_fields = ["user__username"]
     ordering_fields = ["created_at"]
-
-    # TODO: move into mixin
-    def initial(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            raise exceptions.PermissionDenied()
-
-        membership = TenantMembership.objects.filter(
-            tenant=request.tenant, user=request.user
-        ).first()
-
-        self._is_staff = request.user.is_staff
-        self._tenant_role = getattr(membership, "role", None)
-        self._is_tenant_member = bool(membership)
-        self._is_tenant_owner = (self._tenant_role == TenantMembership.Role.OWNER)
-        self._is_tenant_user = (self._tenant_role == TenantMembership.Role.USER)
-
-        # only admin and tenant member have access
-        if not (request.user.is_staff or self._is_tenant_member):
-            raise exceptions.NotFound()
-
-        super().initial(request, *args, **kwargs)
-
-    # TODO: move logic into permission classes
-    def check_permissions(self, request):
-        if request.method in permissions.SAFE_METHODS:
-            return
-
-        # only admin and tenant owner can POST
-        if self._is_staff or self._is_tenant_owner:
-            return
-
-        raise exceptions.PermissionDenied()
 
     def get_queryset(self):
         qs = TenantMembership.objects.for_tenant(self.request.tenant)
@@ -68,35 +57,22 @@ class TenantMembershipListCreateAPIView(generics.ListCreateAPIView):
         serializer.save(tenant=self.request.tenant, created_by=self.request.user)
 
 
-class TenantMembershipRetrieveUpdateDestroyAPIView(
-    generics.RetrieveUpdateDestroyAPIView
+class TenantMembershipRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
+                                                   generics.RetrieveUpdateDestroyAPIView
 ):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def check_permissions(self, request):
-        super().check_permissions(request)
-
-        self._membership = TenantMembership.objects.filter(
-            tenant=self.request.tenant,
-            user=self.request.user,
-        ).first()
-
-        if not (self.request.user.is_staff or self._membership):
-            raise exceptions.NotFound()
-
-    # TODO: move logic in permission classes
-    def check_object_permissions(self, request, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return
-
-        if request.user.is_staff or self._membership.is_owner:
-            return
-
-        is_self_user = request.user == obj.user
-        if request.method == "DELETE" and is_self_user:
-            return
-
-        raise exceptions.PermissionDenied()
+    policy_classes = [
+        IsAuthenticatedPolicy
+        & (IsAdminUserPolicy | IsTenantMemberPolicy)
+    ]
+    permission_classes = [
+        permissions.IsAuthenticated
+        & (
+            permissions.IsAdminUser
+            | IsTenantOwnerPermission
+            | IsSelfDeletePermission
+            | ReadOnlyPermission
+        )
+    ]
 
     def get_queryset(self):
         qs = TenantMembership.objects.for_tenant(self.request.tenant)

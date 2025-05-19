@@ -1,5 +1,7 @@
 from rest_framework.views import exception_handler
 
+from projecthub.core.models import TenantMembership
+
 
 def custom_exception_handler(exc, context):
     # Call REST framework's default exception handler first,
@@ -11,3 +13,7 @@ def custom_exception_handler(exc, context):
         response.data["status_code"] = response.status_code
 
     return response
+
+
+def get_tenant_membership(tenant, user):
+    return TenantMembership.objects.filter(user=user, tenant=tenant).first()

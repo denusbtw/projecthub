@@ -41,6 +41,21 @@ class Comment(UUIDModel, TimestampedModel):
         help_text=_("Author of comment"),
     )
 
+    #TODO:
+    # add search vector: `search_vector = SearchVectorField(null=True)`
+    # create index for it `GinIndex(fields=["search_vector"]`
+    # override save method: `self.search_vector = SearchVector("body")
+    # in views:
+    # def get_queryset(self):
+    #   queryset = super().get_queryset()
+    #   query = self.request.query_params.get('search')
+    #   if query:
+    #       search_query = SearchQuery(query)
+    #       queryset = queryset.annotate(
+    #           rank=SearchRank(F('search_vector'), search_query)
+    #       ).filter(search_vector=search_query).order_by('-rank')
+    #   return queryset
+
     objects = CommentQuerySet.as_manager()
 
     class Meta:

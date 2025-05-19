@@ -1,17 +1,17 @@
-from django.db.models import OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, filters
 
-from projecthub.core.models import TenantMembership, Tenant
+from projecthub.core.models import Tenant
 from .pagination import TenantPagination
 from ..filters import TenantFilterSet
-from ..permissions import IsTenantOwnerOrReadOnlyForCore
+from ..permissions import IsTenantOwnerForCore
 from ..serializers import (
     TenantCreateSerializer,
     TenantListSerializer,
     TenantUpdateSerializer,
     TenantDetailSerializer,
 )
+from ...permissions import ReadOnlyPermission
 
 
 class TenantListCreateAPIView(generics.ListCreateAPIView):
@@ -43,7 +43,7 @@ class TenantListCreateAPIView(generics.ListCreateAPIView):
 class TenantRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [
         permissions.IsAuthenticated,
-        permissions.IsAdminUser | IsTenantOwnerOrReadOnlyForCore
+        permissions.IsAdminUser | IsTenantOwnerForCore | ReadOnlyPermission
     ]
 
     def get_queryset(self):

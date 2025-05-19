@@ -1,17 +1,32 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, exceptions, permissions, filters
+from rest_framework import generics, permissions, filters
 from rest_framework.generics import get_object_or_404
 
-from projecthub.core.models import TenantMembership
-from projecthub.projects.models import ProjectMembership
+from projecthub.core.api.permissions import IsTenantOwnerPermission
+from projecthub.core.api.policies import IsAuthenticatedPolicy, IsAdminUserPolicy, \
+    IsTenantOwnerPolicy
+from projecthub.core.api.v1.views.base import SecureGenericAPIView
+from projecthub.projects.api.v1.permissions import IsProjectOwnerPermission
+from projecthub.projects.api.v1.policies import IsProjectStaffPolicy
+from projecthub.tasks.api.v1.policies import IsTaskResponsiblePolicy
 from projecthub.tasks.models import Task
 from .filters import CommentFilterSet
 from .pagination import CommentPagination
+from .permissions import IsCommentAuthorPermission
 from .serializers import CommentListSerializer, CommentCreateSerializer
 from ...models import Comment
 
 
-class CommentListCreateAPIView(generics.ListCreateAPIView):
+class CommentListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
+    policy_classes = [
+        IsAuthenticatedPolicy
+        & (
+            IsAdminUserPolicy
+            | IsTenantOwnerPolicy
+            | IsProjectStaffPolicy
+            | IsTaskResponsiblePolicy
+        )
+    ]
     pagination_class = CommentPagination
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [
@@ -22,33 +37,6 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
     filterset_class = CommentFilterSet
     search_fields = ["body"]
     ordering_fields = ["parent", "created_at"]
-
-    # TODO: move logic into mixin
-    def initial(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            raise exceptions.PermissionDenied()
-
-        self._task = get_object_or_404(
-            Task, pk=kwargs["task_id"], project__tenant=request.tenant
-        )
-
-        self._tenant_membership = TenantMembership.objects.filter(
-            tenant=request.tenant, user=request.user
-        ).first()
-        self._project_membership = ProjectMembership.objects.filter(
-            project_id=self._task.project_id, user=request.user
-        ).first()
-        self._is_task_responsible = (self._task.responsible_id == request.user.pk)
-
-        if not (
-            request.user.is_staff
-            or (self._tenant_membership and self._tenant_membership.is_owner)
-            or (self._project_membership and self._project_membership.is_staff)
-            or self._is_task_responsible
-        ):
-            raise exceptions.NotFound()
-
-        super().initial(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = Comment.objects.for_tenant(self.request.tenant)
@@ -63,56 +51,40 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(task_id=self.kwargs["task_id"], created_by=self.request.user)
 
-
-class CommentDestroyAPIView(generics.DestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    # TODO: move into mixin
-    def initial(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            raise exceptions.PermissionDenied()
-
-        self._task = get_object_or_404(
+    def get_project_id(self):
+        task = get_object_or_404(
             Task, project__tenant=self.request.tenant, pk=self.kwargs["task_id"]
         )
+        return task.project_id
 
-        self._tenant_membership = TenantMembership.objects.filter(
-            tenant=self.request.tenant, user=self.request.user
-        ).first()
-        self._project_membership = ProjectMembership.objects.filter(
-            project_id=self._task.project_id, user=self.request.user
-        ).first()
-        self._is_task_responsible = (self._task.responsible_id == self.request.user.pk)
 
-        # admin, tenant owner, project staff and task responsible have access
-        if not (
-            request.user.is_staff
-            or (self._tenant_membership and self._tenant_membership.is_owner)
-            or (self._project_membership and self._project_membership.is_staff)
-            or self._is_task_responsible
-        ):
-            raise exceptions.NotFound()
-
-        super().initial(request, *args, **kwargs)
+class CommentDestroyAPIView(SecureGenericAPIView, generics.DestroyAPIView):
+    policy_classes = [
+        IsAuthenticatedPolicy
+        & (
+            IsAdminUserPolicy
+            | IsTenantOwnerPolicy
+            | IsProjectStaffPolicy
+            | IsTaskResponsiblePolicy
+        )
+    ]
+    permission_classes = [
+        permissions.IsAuthenticated
+        & (
+            permissions.IsAdminUser
+            | IsTenantOwnerPermission
+            | IsProjectOwnerPermission
+            | IsCommentAuthorPermission
+        )
+    ]
 
     def get_queryset(self):
         qs = Comment.objects.for_tenant(self.request.tenant)
         qs = qs.for_task(self.kwargs["task_id"])
         return qs
 
-    # TODO: move into permission classes
-    def check_object_permissions(self, request, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return
-
-        # staff, tenant owner, project owner and comment author can PUT, PATCH, DELETE
-        self._is_comment_author = (obj.created_by_id == request.user.pk)
-        if (
-            request.user.is_staff
-            or (self._tenant_membership and self._tenant_membership.is_owner)
-            or (self._project_membership and self._project_membership.is_owner)
-            or self._is_comment_author
-        ):
-            return
-
-        raise exceptions.PermissionDenied()
+    def get_project_id(self):
+        task = get_object_or_404(
+            Task, project__tenant=self.request.tenant, pk=self.kwargs["task_id"]
+        )
+        return task.project_id
