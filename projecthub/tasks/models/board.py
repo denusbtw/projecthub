@@ -5,26 +5,26 @@ from django.utils.translation import gettext_lazy as _
 from projecthub.core.models import UUIDModel, TimestampedModel, Tenant
 
 
-class TaskStatusQuerySet(models.QuerySet):
+class BoardQuerySet(models.QuerySet):
 
     def for_tenant(self, tenant):
         return self.filter(tenant=tenant)
 
 
-class TaskStatus(UUIDModel, TimestampedModel):
+class Board(UUIDModel, TimestampedModel):
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
-        related_name="task_statuses",
-        help_text=_("Tenant that owns this task status."),
+        related_name="boards",
+        help_text=_("Tenant that owns this board."),
     )
-    name = models.CharField(max_length=255, help_text=_("Name of task status."))
+    name = models.CharField(max_length=255, help_text=_("Name of board."))
     code = models.CharField(max_length=50, unique=False, blank=True, default="")
-    order = models.PositiveIntegerField(help_text=_("Order of task status."))
+    order = models.PositiveIntegerField(help_text=_("Order of board."))
     is_default = models.BooleanField(
         default=False,
         help_text=_(
-            "Determines whether task status is default (todo, done, in review, etc)."
+            "Determines whether board is default (todo, done, in review, etc)."
         ),
     )
     created_by = models.ForeignKey(
@@ -32,28 +32,28 @@ class TaskStatus(UUIDModel, TimestampedModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="created_task_statuses",
-        help_text=_("User who created task status."),
+        related_name="created_boards",
+        help_text=_("User who created board."),
     )
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="updated_task_statuses",
+        related_name="updated_boards",
         help_text=_("User who made the last change."),
     )
 
-    objects = TaskStatusQuerySet.as_manager()
+    objects = BoardQuerySet.as_manager()
 
     class Meta:
         ordering = ["order"]
         constraints = [
             models.UniqueConstraint(
-                fields=["tenant", "order"], name="unique_task_status_order_for_tenant"
+                fields=["tenant", "order"], name="unique_border_order_for_tenant"
             ),
             models.UniqueConstraint(
-                fields=["tenant", "code"], name="unique_task_status_code_for_tenant"
+                fields=["tenant", "code"], name="unique_border_code_code_for_tenant"
             ),
         ]
 
