@@ -523,6 +523,125 @@ class TestProjectMembershipRetrieveUpdateDestroyAPIView:
             response = getattr(admin_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
+        class TestDelete:
+
+            @pytest.mark.parametrize("role", [
+                ProjectMembership.Role.OWNER,
+                ProjectMembership.Role.SUPERVISOR,
+                ProjectMembership.Role.RESPONSIBLE,
+                ProjectMembership.Role.USER,
+                ProjectMembership.Role.GUEST,
+                ProjectMembership.Role.READER
+            ])
+            def test_admin_can_delete_any_member(
+                    self, admin_client, detail_url, project_membership, http_host, role
+            ):
+                project_membership.role = role
+                project_membership.save()
+
+                response = admin_client.delete(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == status.HTTP_204_NO_CONTENT
+
+            @pytest.mark.parametrize("role", [
+                ProjectMembership.Role.OWNER,
+                ProjectMembership.Role.SUPERVISOR,
+                ProjectMembership.Role.RESPONSIBLE,
+                ProjectMembership.Role.USER,
+                ProjectMembership.Role.GUEST,
+                ProjectMembership.Role.READER
+            ])
+            def test_tenant_owner_can_delete_any_member(
+                    self,
+                    api_client,
+                    detail_url,
+                    tenant_owner,
+                    project_membership,
+                    http_host,
+                    role
+            ):
+                api_client.force_authenticate(user=tenant_owner.user)
+
+                project_membership.role = role
+                project_membership.save()
+
+                response = api_client.delete(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == status.HTTP_204_NO_CONTENT
+
+            @pytest.mark.parametrize("role", [
+                ProjectMembership.Role.SUPERVISOR,
+                ProjectMembership.Role.RESPONSIBLE,
+                ProjectMembership.Role.USER,
+                ProjectMembership.Role.GUEST,
+                ProjectMembership.Role.READER
+            ])
+            def test_project_owner_can_delete_any_member(
+                    self,
+                    api_client,
+                    detail_url,
+                    project_owner,
+                    project_membership,
+                    http_host,
+                    role
+            ):
+                api_client.force_authenticate(user=project_owner.user)
+
+                project_membership.role = role
+                project_membership.save()
+
+                response = api_client.delete(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == status.HTTP_204_NO_CONTENT
+
+            @pytest.mark.parametrize("role, expected_status_code", [
+                (ProjectMembership.Role.OWNER, status.HTTP_403_FORBIDDEN),
+                (ProjectMembership.Role.RESPONSIBLE, status.HTTP_204_NO_CONTENT),
+                (ProjectMembership.Role.USER, status.HTTP_204_NO_CONTENT),
+                (ProjectMembership.Role.GUEST, status.HTTP_204_NO_CONTENT),
+                (ProjectMembership.Role.READER, status.HTTP_204_NO_CONTENT),
+            ])
+            def test_project_supervisor_can_delete_responsible_and_below(
+                    self,
+                    api_client,
+                    detail_url,
+                    project_supervisor,
+                    project_membership,
+                    http_host,
+                    role,
+                    expected_status_code
+            ):
+                api_client.force_authenticate(user=project_supervisor.user)
+
+                project_membership.role = role
+                project_membership.save()
+
+                response = api_client.delete(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == status.HTTP_204_NO_CONTENT
+
+            @pytest.mark.parametrize("role, expected_status_code", [
+                (ProjectMembership.Role.OWNER, status.HTTP_403_FORBIDDEN),
+                (ProjectMembership.Role.SUPERVISOR, status.HTTP_403_FORBIDDEN),
+                (ProjectMembership.Role.USER, status.HTTP_204_NO_CONTENT),
+                (ProjectMembership.Role.GUEST, status.HTTP_204_NO_CONTENT),
+                (ProjectMembership.Role.READER, status.HTTP_204_NO_CONTENT),
+            ])
+            def test_project_responsible_can_delete_user_and_below(
+                    self,
+                    api_client,
+                    detail_url,
+                    project_responsible,
+                    project_membership,
+                    http_host,
+                    role,
+                    expected_status_code
+            ):
+                api_client.force_authenticate(user=project_responsible.user)
+
+                project_membership.role = role
+                project_membership.save()
+
+                response = api_client.delete(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
     def test_perform_update(
             self, admin_client, detail_url, admin_user, http_host, project_membership
     ):
