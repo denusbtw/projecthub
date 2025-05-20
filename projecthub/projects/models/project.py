@@ -86,7 +86,7 @@ class Project(UUIDModel, TimestampedModel):
         help_text=_("User who made the last change."),
     )
 
-    #TODO:
+    # TODO:
     # add search vector: `search_vector = SearchVectorField(null=True)`
     # create index for it `GinIndex(fields=["search_vector"]`
     # override save method: `self.search_vector = SearchVector("body")
@@ -150,7 +150,7 @@ class Project(UUIDModel, TimestampedModel):
             self.updated_by = updated_by
             self.updated_at = now
             self.close_date = now
-            self.save(update_fields=["status", "updated_by", "updated_at"])
+            self.save(update_fields=["status", "updated_by", "updated_at", "close_date"])
 
     @property
     def is_active(self):
@@ -169,3 +169,24 @@ class Project(UUIDModel, TimestampedModel):
         if self.start_date and self.end_date:
             return self.end_date - self.start_date
         return None
+
+    def has_role(self, role: str, user=None):
+        # if user is not provided, then checks whether project has user with such role
+        # if user is provided, checks whether user has such role in project
+        qs = self.members.filter(role=role)
+        if user:
+            qs = qs.filter(user=user)
+        return qs.exists()
+
+    def get_owner(self):
+        return self.members.get(role=ProjectMembership.Role.OWNER)
+
+    def get_supervisor(self):
+        return self.members.get(role=ProjectMembership.Role.SUPERVISOR)
+
+    def get_responsible(self):
+        return self.members.get(role=ProjectMembership.Role.RESPONSIBLE)
+
+    def get_role_of(self, user):
+        membership = self.members.filter(user=user).first()
+        return membership.role if membership else None

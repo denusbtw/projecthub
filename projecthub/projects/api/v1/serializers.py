@@ -1,7 +1,10 @@
 from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
 
 from projecthub.core.api.v1.serializers.base import UserNestedSerializer
+from projecthub.core.models import TenantMembership
 from projecthub.projects.models import ProjectMembership, Project
+from projecthub.projects.utils import get_role_value
 
 
 # ==== Project serializers ==== #
@@ -75,27 +78,126 @@ class ProjectMembershipDetailSerializer(BaseProjectMembershipReadSerializer):
     pass
 
 
-class ProjectMembershipCreateSerializer(serializers.ModelSerializer):
+class BaseProjectMembershipWriteSerializer(serializers.ModelSerializer):
+
+    def validate_role(self, value):
+        """
+        Validates whether a user can assign the specified role (`new_role`) to a project member,
+        based on the current user's privileges and role constraints within the project.
+
+        Role constraints:
+        - Only one project member may hold the `owner`, `supervisor`, or `responsible` role at any time.
+        - Admins and tenant owners can assign any role, but may only assign a unique role
+          (`owner`, `supervisor`, `responsible`) if it is currently unoccupied.
+          If the target role is already assigned to another member, a ValidationError is raised.
+        - Project owners may transfer their `owner` role to another user only if the `supervisor` role is vacant.
+          Otherwise, the operation is denied.
+        - Project supervisors may transfer their `supervisor` role only if the `responsible` role is vacant.
+        - Project responsibles cannot transfer their own role, but they may assign the roles
+          `user`, `guest`, or `reader` to new or existing members.
+        - All role changes must respect role uniqueness; automatic demotion of other members is not allowed.
+
+        Raises:
+            ValidationError: if the role assignment violates any of the above constraints.
+        """
+        request = self.context.get("request")
+        if not request or not request.user:
+            raise serializers.ValidationError("Request is required.")
+
+        project_id = self.context.get("project_id")
+        if not project_id:
+            raise serializers.ValidationError("project_id is required in context.")
+
+        project = get_object_or_404(Project, tenant=request.tenant, pk=project_id)
+        new_role = value
+        # admin, tenant owner and project owner can create/update any role
+        if not (
+                request.user.is_staff
+                or request.tenant.has_role(TenantMembership.Role.OWNER, request.user)
+                or project.has_role(ProjectMembership.Role.OWNER, request.user)
+        ):
+            request_user_role = project.get_role_of(request.user)
+            if get_role_value(request_user_role) < get_role_value(new_role):
+                raise serializers.ValidationError(
+                    f"As'{request_user_role}' you can't assign '{new_role}' role."
+                )
+
+        if new_role in ProjectMembership.SINGLE_USER_ROLES:
+            downgrade_role = self.get_downgrade_role(new_role)
+            if downgrade_role == ProjectMembership.Role.USER:
+                return new_role
+
+            if project.has_role(downgrade_role):
+                raise serializers.ValidationError(
+                    f"You can't assign '{new_role}' role to user"
+                    f" unless you free '{downgrade_role}' role."
+                )
+
+        return new_role
+
+    def get_downgrade_role(self, role):
+        return {
+            ProjectMembership.Role.OWNER: ProjectMembership.Role.SUPERVISOR,
+            ProjectMembership.Role.SUPERVISOR: ProjectMembership.Role.RESPONSIBLE,
+            ProjectMembership.Role.RESPONSIBLE: ProjectMembership.Role.USER,
+        }.get(role)
+
+
+class ProjectMembershipCreateSerializer(BaseProjectMembershipWriteSerializer):
     class Meta:
         model = ProjectMembership
         fields = ("user", "role")
 
-    #TODO
-    # if user with single role (owner, supervisor, responsible) exists
-    # then he is deleted
-    # admin, tenant owner and project owner can create user with any role
-    # supervisor can create only responsible, user, guest, reader
-    # responsible can create only user, guest, reader
+    def create(self, validated_data):
+        request = self.context.get("request")
+        project_id = self.context.get("project_id")
+
+        project = get_object_or_404(Project, tenant=request.tenant, pk=project_id)
+
+        new_role = validated_data["role"]
+        if new_role in ProjectMembership.SINGLE_USER_ROLES:
+            downgrade_role = self.get_downgrade_role(new_role)
+            project_membership = ProjectMembership.objects.get(
+                project=project,
+                role=new_role
+            )
+            project_membership.set_role(downgrade_role, request.user)
+            project_membership.save()
+
+        membership = ProjectMembership(
+            user=validated_data["user"],
+            project=project,
+            created_by=request.user
+        )
+        membership.set_role(new_role, request.user)
+        membership.save()
+        return membership
 
 
-class ProjectMembershipUpdateSerializer(serializers.ModelSerializer):
+class ProjectMembershipUpdateSerializer(BaseProjectMembershipWriteSerializer):
     class Meta:
         model = ProjectMembership
         fields = ("role",)
 
-    #TODO
-    # if role is single (owner, supervisor, responsible) and user with such role exists
-    # then he is deleted
-    # admin, tenant owner and project owner can update any role
-    # supervisor can update only responsible, user, guest, reader
-    # responsible can update only user, guest, reader
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        project_id = self.context.get("project_id")
+
+        project = get_object_or_404(Project, tenant=request.tenant, pk=project_id)
+
+        new_role = validated_data.get("role")
+        if new_role is None:
+            return instance
+
+        if new_role in ProjectMembership.SINGLE_USER_ROLES:
+            downgrade_role = self.get_downgrade_role(new_role)
+            project_membership = ProjectMembership.objects.get(
+                project=project,
+                role=new_role
+            )
+            project_membership.set_role(downgrade_role, request.user)
+            project_membership.save()
+
+        instance.set_role(new_role, request.user)
+        instance.save()
+        return instance

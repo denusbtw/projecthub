@@ -3,8 +3,8 @@ from django.db import models
 from django.db.models import OuterRef, Subquery
 from django.utils.translation import gettext_lazy as _
 
-from .tenant_membership import TenantMembership
 from .base import UUIDModel, TimestampedModel
+from .tenant_membership import TenantMembership
 
 
 class TenantQuerySet(models.QuerySet):
@@ -75,3 +75,13 @@ class Tenant(UUIDModel, TimestampedModel):
             self.is_active = False
             self.updated_by = updated_by
             self.save(update_fields=["is_active", "updated_by"])
+
+    def has_role(self, role: str, user=None):
+        qs = self.members.filter(role=role)
+        if user:
+            qs = qs.filter(user=user)
+        return qs.exists()
+
+    def get_owner(self):
+        return self.members.get(role=TenantMembership.Role.OWNER)
+    

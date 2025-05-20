@@ -1,10 +1,12 @@
 from rest_framework.permissions import BasePermission
 
-from projecthub.core.utils import get_tenant_membership
+from projecthub.core.models import TenantMembership
 from projecthub.projects.models import ProjectMembership
 from projecthub.projects.utils import (
-    get_project_membership, resolve_project_id_from_obj,
-    resolve_project_id_from_view
+    get_project_membership,
+    resolve_project_id_from_obj,
+    resolve_project_id_from_view,
+    get_role_value
 )
 
 
@@ -35,42 +37,39 @@ class IsProjectStaffPermission(BasePermission):
         return membership and membership.is_staff
 
 
-class CanDeleteProjectMembershipPermission(BasePermission):
+class CanManageProjectMembershipPermission(BasePermission):
 
     def has_object_permission(self, request, view, obj):
-        if request.method != "DELETE":
+        """
+        Determines whether the requesting user has permission to delete a specific project membership.
+
+        Rules:
+        - A user can always delete their own membership.
+        - Admins, tenant owners, and project owners can delete any project member.
+        - A project supervisor can delete:
+            - themselves,
+            - members with roles: responsible, user, guest, reader.
+        - A project responsible can delete:
+            - themselves,
+            - members with roles: user, guest, reader.
+        - Deletion is only allowed via the DELETE method. All other methods are denied by this permission.
+        """
+        if request.method not in {"PUT", "PATCH", "DELETE"}:
             return False
 
-        # user can delete self
-        if request.user == obj.user:
-            return True
+        tenant = request.tenant
+        project = obj.project
 
-        tenant_membership = get_tenant_membership(
-            tenant=request.tenant, user=request.user
-        )
-        project_membership = get_project_membership(
-            project_id=obj.project_id, tenant=request.tenant, user=request.user
-        )
-
-        # admin, tenant owner and project owner can delete any project member
         if (
-                request.user.is_staff
-                or (tenant_membership and tenant_membership.is_owner)
-                or (project_membership and project_membership.is_owner)
+                request.user == obj.user
+                or request.user.is_staff
+                or tenant.has_role(TenantMembership.Role.OWNER, request.user)
+                or project.has_role(ProjectMembership.Role.OWNER, request.user)
         ):
             return True
 
-        request_user_role_value = self.get_role_value(project_membership.role)
-        member_role_value = self.get_role_value(obj.role)
-        return request_user_role_value > member_role_value
+        request_user_role = project.get_role_of(request.user)
+        if request_user_role not in ProjectMembership.STAFF_USER_ROLES:
+            return False
 
-    def get_role_value(self, role):
-        role_values = {
-            ProjectMembership.Role.OWNER: 5,
-            ProjectMembership.Role.SUPERVISOR: 4,
-            ProjectMembership.Role.RESPONSIBLE: 3,
-            ProjectMembership.Role.USER: 2,
-            ProjectMembership.Role.GUEST: 1,
-            ProjectMembership.Role.READER: 0,
-        }
-        return role_values.get(role)
+        return get_role_value(request_user_role) >= get_role_value(obj.role)
