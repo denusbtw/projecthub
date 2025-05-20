@@ -1,7 +1,10 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, exceptions, permissions, filters
+from rest_framework import generics, permissions, filters
 
-from projecthub.core.models import TenantMembership
+from projecthub.core.api.permissions import IsTenantOwnerPermission, ReadOnlyPermission
+from projecthub.core.api.policies import IsAuthenticatedPolicy, IsAdminUserPolicy, \
+    IsTenantMemberPolicy
+from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.tasks.models import Board
 from .pagination import BoardPagination
 from ..filters import BoardFilterSet
@@ -13,7 +16,26 @@ from ..serializers import (
 )
 
 
-class BoardListCreateAPIView(generics.ListCreateAPIView):
+class BoardListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
+    #TODO: such docstring for each view
+    """
+    API view for listing and creating boards.
+
+    Access:
+        - Only staff and members of current tenant
+
+    Permissions:
+        - GET: admin, owner and members of tenant
+        - POST: admin and tenant owner
+    """
+    policy_classes = [
+        IsAuthenticatedPolicy
+        & (IsAdminUserPolicy | IsTenantMemberPolicy)
+    ]
+    permission_classes = [
+        permissions.IsAuthenticated
+        & (permissions.IsAdminUser | IsTenantOwnerPermission | ReadOnlyPermission)
+    ]
     pagination_class = BoardPagination
     filter_backends = [
         DjangoFilterBackend,
@@ -23,34 +45,6 @@ class BoardListCreateAPIView(generics.ListCreateAPIView):
     filterset_class = BoardFilterSet
     search_fields = ["name", "code"]
     ordering_fields = ["name", "order", "created_at", "is_default"]
-
-    #TODO:
-    def initial(self, request, *args, **kwargs):
-        if not self.request.user.is_authenticated:
-            raise exceptions.PermissionDenied()
-
-        self._tenant_membership = TenantMembership.objects.filter(
-            tenant=self.request.tenant, user=self.request.user
-        ).first()
-
-        # only staff and tenant member have access
-        if not (request.user.is_staff or self._tenant_membership):
-            raise exceptions.NotFound()
-
-        super().initial(request, *args, **kwargs)
-
-    # TODO: move into permission classes
-    def check_permissions(self, request):
-        if request.method in permissions.SAFE_METHODS:
-            return
-
-        if (
-                request.user.is_staff
-                or (self._tenant_membership and self._tenant_membership.is_owner)
-        ):
-            return
-
-        raise exceptions.PermissionDenied()
 
     def get_queryset(self):
         return Board.objects.for_tenant(self.request.tenant)
@@ -68,39 +62,19 @@ class BoardListCreateAPIView(generics.ListCreateAPIView):
         )
 
 
-class BoardRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    # if task board is 'Todo', he can set board to None (revoke from task) or 'In Progress'
-    # if task board is 'In Progress', he can set board to None(revoke), 'Todo', or 'In Review'
-    # if task board 'Done' or 'In Review', he can't update board
-
-    def check_permissions(self, request):
-        super().check_permissions(request)
-
-        self._tenant_membership = TenantMembership.objects.filter(
-            tenant=self.request.tenant, user=self.request.user
-        ).first()
-
-        if not (self.request.user.is_staff or self._tenant_membership):
-            raise exceptions.NotFound()
+class BoardRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
+                                        generics.RetrieveUpdateDestroyAPIView):
+    policy_classes = [
+        IsAuthenticatedPolicy
+        & (IsAdminUserPolicy | IsTenantMemberPolicy)
+    ]
+    permission_classes = [
+        permissions.IsAuthenticated
+        & (permissions.IsAdminUser | IsTenantOwnerPermission | ReadOnlyPermission)
+    ]
 
     def get_queryset(self):
         return Board.objects.for_tenant(tenant=self.request.tenant)
-
-    # TODO: move into permission classes
-    def check_object_permissions(self, request, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return
-
-        # only admin and tenant owner can PUT, PATCH and DELETE
-        if (
-                request.user.is_staff
-                or (self._tenant_membership and self._tenant_membership.is_owner)
-        ):
-            return
-
-        raise exceptions.PermissionDenied()
 
     def get_serializer_class(self):
         if self.request.method in {"PUT", "PATCH"}:

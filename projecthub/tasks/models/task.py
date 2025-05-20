@@ -145,6 +145,9 @@ class Task(UUIDModel, TimestampedModel):
         if not updated_by:
             raise ValidationError("updated_by is required.")
 
+        #TODO: if code is None, it means that user wants to revoke from task
+        # so call self.revoke(updated_by)
+
         board = Board.objects.filter(
             tenant_id=self.project.tenant_id, code=code
         ).first()
@@ -173,6 +176,7 @@ class Task(UUIDModel, TimestampedModel):
 
         self.board = None
         self.responsible = None
+        # TODO: remove changing updated_by and updated_at here
         self.updated_by = updated_by
         self.updated_at = timezone.now()
         self.save(update_fields=["board", "responsible", "updated_by", "updated_at"])

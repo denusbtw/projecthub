@@ -6,6 +6,7 @@ from projecthub.core.models import TenantMembership
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
 from projecthub.projects.models import ProjectMembership
 from projecthub.projects.tests.factories import ProjectFactory, ProjectMembershipFactory
+from projecthub.tasks.models import Board
 from projecthub.tasks.tests.factories import TaskFactory, BoardFactory
 from projecthub.users.tests.factories import UserFactory
 
@@ -126,22 +127,22 @@ def board_factory():
 
 @pytest.fixture
 def todo_board(db, tenant):
-    return BoardFactory(tenant=tenant, name="To Do", code="todo")
+    return BoardFactory(tenant=tenant, name="To Do", code=Board.TODO)
 
 
 @pytest.fixture
 def in_progress_board(db, tenant):
-    return BoardFactory(tenant=tenant, name="In progress", code="in_progress")
+    return BoardFactory(tenant=tenant, name="In progress", code=Board.IN_PROGRESS)
 
 
 @pytest.fixture
 def in_review_board(db, tenant):
-    return BoardFactory(tenant=tenant, name="In review", code="in_review")
+    return BoardFactory(tenant=tenant, name="In review", code=Board.IN_REVIEW)
 
 
 @pytest.fixture
 def done_board(db, tenant):
-    return BoardFactory(tenant=tenant, name="Done", code="done")
+    return BoardFactory(tenant=tenant, name="Done", code=Board.DONE)
 
 
 @pytest.fixture

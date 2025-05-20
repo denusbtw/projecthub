@@ -12,6 +12,11 @@ class BoardQuerySet(models.QuerySet):
 
 
 class Board(UUIDModel, TimestampedModel):
+    TODO = "todo"
+    IN_PROGRESS = "in_progress"
+    IN_REVIEW = "in_review"
+    DONE = "done"
+
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,

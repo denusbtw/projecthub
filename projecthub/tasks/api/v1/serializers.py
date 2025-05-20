@@ -53,8 +53,49 @@ class TaskUpdateSerializer(BaseTaskWriteSerializer):
     class Meta(BaseTaskWriteSerializer.Meta):
         extra_kwargs = {"name": {"required": False}}
 
-#TODO
-# create serializer for task responsible (he can update only status)
+
+class TaskUpdateSerializerForResponsible(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = ("board",)
+
+    def validate_board(self, new_board):
+        allowed_transitions = {
+            Board.TODO: [None, Board.IN_PROGRESS],
+            Board.IN_PROGRESS: [None, Board.TODO, Board.IN_REVIEW],
+            Board.IN_REVIEW: [Board.TODO, Board.IN_PROGRESS],
+            Board.DONE: [],
+        }
+        
+        task = self.instance
+        current_board = task.board
+
+        if new_board == current_board:
+            return new_board
+
+        new_board_code = new_board.code if new_board else None
+        new_board_name = new_board.name if new_board else None
+        if new_board_code not in allowed_transitions.get(current_board.code):
+            raise serializers.ValidationError(
+                f"You can't move task from {current_board.name} to {new_board_name}"
+            )
+
+        return new_board
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        new_board = validated_data.get("board")
+        if new_board == instance.board:
+            return instance
+
+        if new_board is None:
+            instance.revoke(user)
+            return instance
+
+        instance.set_board(new_board.code, user)
+        return instance
 
 
 # ==== Board serializers ==== #
@@ -87,7 +128,4 @@ class BoardCreateSerializer(BaseBoardWriteSerializer):
 
 class BoardUpdateSerializer(BaseBoardWriteSerializer):
     class Meta(BaseBoardWriteSerializer.Meta):
-        extra_kwargs = {
-            "name": {"required": False},
-            "order": {"required": False}
-        }
+        extra_kwargs = {"name": {"required": False}, "order": {"required": False}}

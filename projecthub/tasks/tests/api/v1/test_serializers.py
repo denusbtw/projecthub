@@ -1,4 +1,6 @@
 import pytest
+from django.core import exceptions as django_exceptions
+from rest_framework import exceptions as drf_exceptions
 
 from projecthub.conftest import todo_board
 from projecthub.tasks.api.v1.serializers import (
@@ -9,7 +11,9 @@ from projecthub.tasks.api.v1.serializers import (
     BoardCreateSerializer,
     BoardListSerializer,
     BoardUpdateSerializer,
+    TaskUpdateSerializerForResponsible,
 )
+from projecthub.tasks.models import Board
 
 
 @pytest.mark.django_db
@@ -72,6 +76,116 @@ class TestTaskUpdateSerializer:
     def test_no_error_if_empty_data(self, task):
         serializer = TaskUpdateSerializer(task, data={})
         assert serializer.is_valid(), serializer.errors
+
+
+@pytest.mark.django_db
+class TestTaskUpdateSerializerForTaskResponsible:
+
+    @pytest.mark.parametrize("from_code, to_code, should_succeed", [
+        (Board.TODO, None, True),
+        (Board.TODO, Board.TODO, True),
+        (Board.TODO, Board.IN_PROGRESS, True),
+        (Board.TODO, Board.IN_REVIEW, False),
+        (Board.TODO, Board.DONE, False),
+        (Board.IN_PROGRESS, None, True),
+        (Board.IN_PROGRESS, Board.TODO, True),
+        (Board.IN_PROGRESS, Board.IN_PROGRESS, True),
+        (Board.IN_PROGRESS, Board.IN_REVIEW, True),
+        (Board.IN_PROGRESS, Board.DONE, False),
+        (Board.IN_REVIEW, None, False),
+        (Board.IN_REVIEW, Board.TODO, True),
+        (Board.IN_REVIEW, Board.IN_PROGRESS, True),
+        (Board.IN_REVIEW, Board.IN_REVIEW, True),
+        (Board.IN_REVIEW, Board.DONE, False),
+        (Board.DONE, None, False),
+        (Board.DONE, Board.TODO, False),
+        (Board.DONE, Board.IN_PROGRESS, False),
+        (Board.DONE, Board.IN_REVIEW, False),
+        (Board.DONE, Board.DONE, True),
+    ])
+    def test_validate_board(
+            self, tenant, board_factory, task_factory,
+            from_code, to_code, should_succeed
+    ):
+        from_board = board_factory(code=from_code, tenant=tenant)
+        task = task_factory(board=from_board)
+
+        if to_code:
+            if from_code == to_code:
+                data = {"board": from_board.pk}
+            else:
+                new_board = board_factory(code=to_code, tenant=tenant)
+                data = {"board": new_board.pk}
+        else:
+            data = {"board": None}
+
+        serializer = TaskUpdateSerializerForResponsible(task, data=data)
+
+        if should_succeed:
+            assert serializer.is_valid(), serializer.errors
+        else:
+            with pytest.raises(drf_exceptions.ValidationError, match="You can't move task from"):
+                serializer.is_valid(raise_exception=True)
+
+    def test_update_same_board(self, project, task_factory, todo_board, mocker):
+        task = task_factory(board=todo_board, project=project)
+
+        data = {"board": todo_board.pk}
+        serializer = TaskUpdateSerializerForResponsible(task, data=data)
+        assert serializer.is_valid(), serializer.errors
+
+        mock_set_board = mocker.patch.object(task, "set_board")
+        mock_revoke = mocker.patch.object(task, "revoke")
+
+        serializer.save()
+        mock_set_board.assert_not_called()
+        mock_revoke.assert_not_called()
+
+    def test_update_new_board(
+            self, project, task_factory, todo_board, in_progress_board, mocker, rf, user
+    ):
+        request = rf.get("/")
+        request.user = user
+
+        task = task_factory(board=todo_board, project=project)
+
+        data = {"board": in_progress_board.pk}
+        context = {"request": request}
+        serializer = TaskUpdateSerializerForResponsible(task, data=data, context=context)
+        assert serializer.is_valid(), serializer.errors
+
+        mock_set_board = mocker.patch.object(task, "set_board")
+
+        serializer.save()
+        mock_set_board.assert_called_once_with(in_progress_board.code, user)
+
+    def test_update_board_none(self, project, todo_board, task_factory, mocker, rf, user):
+        request = rf.get("/")
+        request.user = user
+
+        task = task_factory(board=todo_board, project=project)
+
+        data = {"board": None}
+        context = {"request": request}
+        serializer = TaskUpdateSerializerForResponsible(task, data=data, context=context)
+        assert serializer.is_valid(), serializer.errors
+
+        mock_revoke = mocker.patch.object(task, "revoke")
+
+        serializer.save()
+        mock_revoke.assert_called_once_with(user)
+
+    def test_error_if_no_request_in_context(
+            self, project, todo_board, task_factory, mocker
+    ):
+        task = task_factory(board=todo_board, project=project)
+        data = {"board": None}
+
+        serializer = TaskUpdateSerializerForResponsible(task, data=data, context={})
+        assert serializer.is_valid(), serializer.errors
+
+        with pytest.raises(django_exceptions.ValidationError):
+            serializer.save()
 
 
 @pytest.fixture

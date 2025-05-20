@@ -16,6 +16,7 @@ from ..serializers import (
     TaskListSerializer,
     TaskUpdateSerializer,
     TaskDetailSerializer,
+    TaskUpdateSerializerForResponsible,
 )
 
 
@@ -110,9 +111,9 @@ class TaskRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
 
     def get_serializer_class(self):
         if self.request.method in {"PUT", "PATCH"}:
-            # TODO
-            # if self._is_task_responsible:
-            #     return TaskUpdateSerializerForResponsible
+            task = self.get_object()
+            if task.responsible == self.request.user:
+                return TaskUpdateSerializerForResponsible
             return TaskUpdateSerializer
         return TaskDetailSerializer
 

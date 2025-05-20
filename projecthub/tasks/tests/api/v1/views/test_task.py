@@ -603,3 +603,15 @@ class TestTaskRetrieveUpdateDestroyAPIView:
         assert response.status_code == status.HTTP_200_OK
         task.refresh_from_db()
         assert task.updated_by == admin_user
+
+    def test_uses_task_responsible_update_serializer_if_user_is_task_responsible(
+            self, api_client, detail_url, task, user, http_host
+    ):
+        api_client.force_authenticate(user=task.responsible)
+
+        data = {"board": task.board.pk}
+        response = api_client.put(detail_url, data=data, HTTP_HOST=http_host)
+        assert response.status_code == status.HTTP_200_OK
+
+        # expected serializer has only one attribute 'board'
+        assert set(response.data.keys()) == {"board"}
