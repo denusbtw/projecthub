@@ -7,7 +7,7 @@ from projecthub.core.api.policies import IsAuthenticatedPolicy, IsAdminUserPolic
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.projects.models import ProjectMembership
 from ..filters import ProjectMembershipFilterSet
-from ..permissions import IsProjectStaffPermission
+from ..permissions import IsProjectStaffPermission, CanManageProjectMembershipPermission
 from ..policies import IsProjectMemberPolicy
 from ..serializers import (
     ProjectMembershipCreateSerializer,
@@ -87,10 +87,10 @@ class ProjectMembershipRetrieveUpdateDestroyAPIView(
     permission_classes = [
         permissions.IsAuthenticated
         & (
-            permissions.IsAdminUser
-            | IsTenantOwnerPermission
-            | IsProjectStaffPermission
-            | ReadOnlyPermission
+                permissions.IsAdminUser
+                | IsTenantOwnerPermission
+                | CanManageProjectMembershipPermission
+                | ReadOnlyPermission
         )
     ]
 
@@ -104,14 +104,10 @@ class ProjectMembershipRetrieveUpdateDestroyAPIView(
             return ProjectMembershipUpdateSerializer
         return ProjectMembershipDetailSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["project_id"] = self.kwargs["project_id"]
+        return context
+
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
-
-    def perform_destroy(self, instance):
-        #TODO: INTO PERMISSION CLASS 
-        # user can delete self
-        # admin, tenant owner and project owner can delete any member
-        # supervisor can delete only responsible, user, guest and reader
-        # responsible can delete only user, guest and reader
-        # else 403
-        pass

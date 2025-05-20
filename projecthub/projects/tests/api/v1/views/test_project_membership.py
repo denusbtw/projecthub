@@ -523,6 +523,198 @@ class TestProjectMembershipRetrieveUpdateDestroyAPIView:
             response = getattr(admin_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
+        class TestDelete:
+
+            @pytest.mark.parametrize("role", [
+                ProjectMembership.Role.OWNER,
+                ProjectMembership.Role.SUPERVISOR,
+                ProjectMembership.Role.RESPONSIBLE,
+                ProjectMembership.Role.USER,
+                ProjectMembership.Role.GUEST,
+                ProjectMembership.Role.READER
+            ])
+            def test_admin_can_delete_any_member(
+                    self, admin_client, detail_url, project_membership, http_host, role
+            ):
+                project_membership.role = role
+                project_membership.save()
+
+                response = admin_client.delete(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == status.HTTP_204_NO_CONTENT
+
+            @pytest.mark.parametrize("method, role, expected_status_code", [
+                ("put", ProjectMembership.Role.OWNER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.OWNER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.OWNER, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.SUPERVISOR, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.SUPERVISOR, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.SUPERVISOR, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.RESPONSIBLE, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.RESPONSIBLE, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.RESPONSIBLE, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.USER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.USER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.USER, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.GUEST, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.GUEST, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.GUEST, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.READER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.READER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.READER, status.HTTP_204_NO_CONTENT)
+            ])
+            def test_tenant_owner_can_manage_any_member(
+                    self,
+                    api_client,
+                    detail_url,
+                    tenant_owner,
+                    project_membership,
+                    http_host,
+                    method,
+                    role,
+                    expected_status_code
+            ):
+                api_client.force_authenticate(user=tenant_owner.user)
+
+                project_membership.role = role
+                project_membership.save()
+
+                response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == expected_status_code
+
+            @pytest.mark.parametrize("method, role, expected_status_code", [
+                ("put", ProjectMembership.Role.OWNER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.OWNER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.OWNER, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.SUPERVISOR, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.SUPERVISOR, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.SUPERVISOR, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.RESPONSIBLE, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.RESPONSIBLE, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.RESPONSIBLE, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.USER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.USER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.USER, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.GUEST, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.GUEST, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.GUEST, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.READER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.READER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.READER, status.HTTP_204_NO_CONTENT)
+            ])
+            def test_project_owner_can_manage_any_member(
+                    self,
+                    api_client,
+                    detail_url,
+                    project_owner,
+                    project_membership,
+                    http_host,
+                    method,
+                    role,
+                    expected_status_code
+            ):
+                api_client.force_authenticate(user=project_owner.user)
+
+                project_membership.role = role
+                project_membership.save()
+
+                response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == expected_status_code
+
+            @pytest.mark.parametrize("method, role, expected_status_code", [
+                ("put", ProjectMembership.Role.OWNER, status.HTTP_403_FORBIDDEN),
+                ("patch", ProjectMembership.Role.OWNER, status.HTTP_403_FORBIDDEN),
+                ("delete", ProjectMembership.Role.OWNER, status.HTTP_403_FORBIDDEN),
+                ("put", ProjectMembership.Role.RESPONSIBLE, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.RESPONSIBLE, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.RESPONSIBLE, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.USER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.USER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.USER, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.GUEST, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.GUEST, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.GUEST, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.READER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.READER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.READER, status.HTTP_204_NO_CONTENT)
+            ])
+            def test_project_supervisor_can_manage_responsible_and_below(
+                    self,
+                    api_client,
+                    detail_url,
+                    project_supervisor,
+                    project_membership,
+                    http_host,
+                    method,
+                    role,
+                    expected_status_code
+            ):
+                api_client.force_authenticate(user=project_supervisor.user)
+
+                project_membership.role = role
+                project_membership.save()
+
+                response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == expected_status_code
+
+            @pytest.mark.parametrize("method, role, expected_status_code", [
+                ("put", ProjectMembership.Role.OWNER, status.HTTP_403_FORBIDDEN),
+                ("patch", ProjectMembership.Role.OWNER, status.HTTP_403_FORBIDDEN),
+                ("delete", ProjectMembership.Role.OWNER, status.HTTP_403_FORBIDDEN),
+                ("put", ProjectMembership.Role.SUPERVISOR, status.HTTP_403_FORBIDDEN),
+                ("patch", ProjectMembership.Role.SUPERVISOR, status.HTTP_403_FORBIDDEN),
+                ("delete", ProjectMembership.Role.SUPERVISOR, status.HTTP_403_FORBIDDEN),
+                ("put", ProjectMembership.Role.USER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.USER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.USER, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.GUEST, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.GUEST, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.GUEST, status.HTTP_204_NO_CONTENT),
+                ("put", ProjectMembership.Role.READER, status.HTTP_200_OK),
+                ("patch", ProjectMembership.Role.READER, status.HTTP_200_OK),
+                ("delete", ProjectMembership.Role.READER, status.HTTP_204_NO_CONTENT)
+            ])
+            def test_project_responsible_can_delete_user_and_below(
+                    self,
+                    api_client,
+                    detail_url,
+                    project_responsible,
+                    project_membership,
+                    http_host,
+                    method,
+                    role,
+                    expected_status_code
+            ):
+                api_client.force_authenticate(user=project_responsible.user)
+
+                project_membership.role = role
+                project_membership.save()
+
+                response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == expected_status_code
+
+            @pytest.mark.parametrize("role", [
+                ProjectMembership.Role.OWNER,
+                ProjectMembership.Role.SUPERVISOR,
+                ProjectMembership.Role.RESPONSIBLE,
+                ProjectMembership.Role.USER,
+                ProjectMembership.Role.GUEST,
+                ProjectMembership.Role.READER
+            ])
+            def test_any_member_can_delete_self(
+                    self,
+                    api_client,
+                    detail_url,
+                    project_membership,
+                    http_host,
+                    role,
+            ):
+                api_client.force_authenticate(user=project_membership.user)
+                project_membership.role = role
+                project_membership.save()
+
+                response = api_client.delete(detail_url, HTTP_HOST=http_host)
+                assert response.status_code == status.HTTP_204_NO_CONTENT
+
     def test_perform_update(
             self, admin_client, detail_url, admin_user, http_host, project_membership
     ):

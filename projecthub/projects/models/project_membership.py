@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from projecthub.core.models import UUIDModel, TimestampedModel
@@ -116,3 +117,8 @@ class ProjectMembership(UUIDModel, TimestampedModel):
     @property
     def is_staff(self):
         return self.role in self.STAFF_USER_ROLES
+
+    def set_role(self, role, updated_by):
+        self.role = role
+        self.updated_by = updated_by
+        self.updated_at = timezone.now()

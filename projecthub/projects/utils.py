@@ -11,6 +11,14 @@ def get_project_membership(project_id, tenant, user):
     ).first()
 
 
+def get_project_membership_with_role(role, project_id, tenant):
+    return ProjectMembership.objects.filter(
+        role=role,
+        project__tenant=tenant,
+        project_id=project_id,
+    ).first()
+
+
 def resolve_project_id_from_obj(obj):
     project_id = None
 
@@ -31,3 +39,14 @@ def resolve_project_id_from_view(view):
         return view.get_project_id()
     else:
         return view.kwargs.get("project_id")
+
+
+def get_role_value(role):
+    return {
+        ProjectMembership.Role.OWNER: 5,
+        ProjectMembership.Role.SUPERVISOR: 4,
+        ProjectMembership.Role.RESPONSIBLE: 3,
+        ProjectMembership.Role.USER: 2,
+        ProjectMembership.Role.GUEST: 1,
+        ProjectMembership.Role.READER: 0,
+    }.get(role)
