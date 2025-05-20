@@ -16,7 +16,6 @@ class UserFactory(factory.django.DjangoModelFactory):
         lambda: timezone.make_aware(faker.date_time_this_year())
     )
 
-    # TODO: test
     @factory.post_generation
     def password(self, create, extracted, **kwargs):
         password = (
