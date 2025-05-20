@@ -20,7 +20,6 @@ class BoardFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Board
 
-    # TODO: test
     @factory.lazy_attribute
     def code(self):
         return slugify(self.name)
@@ -43,7 +42,6 @@ class TaskFactory(factory.django.DjangoModelFactory):
         model = Task
         skip_postgeneration_save = True
 
-    # TODO: test
     @factory.post_generation
     def create_project_membership(self, created, extracted, **kwargs):
         if not created:
@@ -59,7 +57,6 @@ class TaskFactory(factory.django.DjangoModelFactory):
             },
         )
 
-    # TODO: test
     @factory.post_generation
     def create_tenant_membership(self, created, extracted, **kwargs):
         if not created:
