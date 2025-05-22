@@ -1,5 +1,8 @@
 from django.urls import path
 
+from projecthub.attachments.api.views import CommentAttachmentListCreateAPIView, \
+    TaskAttachmentListCreateAPIView, TaskAttachmentRetrieveDestroyAPIView, \
+    CommentAttachmentRetrieveDestroyAPIView
 from projecthub.comments.api.v1.views import CommentListCreateAPIView, \
     CommentDestroyAPIView
 from projecthub.core.api.v1.views import (
@@ -80,5 +83,25 @@ urlpatterns = [
         "tasks/<uuid:task_id>/comments/<uuid:pk>/",
         CommentDestroyAPIView.as_view(),
         name="comment_detail"
+    ),
+    path(
+        "tasks/<uuid:task_id>/attachments/",
+        TaskAttachmentListCreateAPIView.as_view(),
+        name="task_attachment_list"
+    ),
+    path(
+        "tasks/<uuid:task_id>/attachments/<uuid:pk>",
+        TaskAttachmentRetrieveDestroyAPIView.as_view(),
+        name="task_attachment_detail"
+    ),
+    path(
+        "comments/<uuid:comment_id>/attachments/",
+        CommentAttachmentListCreateAPIView.as_view(),
+        name="comment_attachment_list"
+    ),
+    path(
+        "comments/<uuid:comment_id>/attachments/<uuid:pk>/",
+        CommentAttachmentRetrieveDestroyAPIView.as_view(),
+        name="comment_attachment_detail"
     )
 ]

@@ -1,3 +1,4 @@
+from projecthub.attachments.models import CommentAttachment, TaskAttachment
 from projecthub.comments.models import Comment
 from projecthub.projects.models import ProjectMembership, Project
 from projecthub.tasks.models import Task
@@ -29,6 +30,10 @@ def resolve_project_id_from_obj(obj):
     elif isinstance(obj, Task):
         project_id = obj.project_id
     elif isinstance(obj, Comment):
+        project_id = obj.task.project_id
+    elif isinstance(obj, CommentAttachment):
+        project_id = obj.comment.task.project_id
+    elif isinstance(obj, TaskAttachment):
         project_id = obj.task.project_id
 
     return project_id

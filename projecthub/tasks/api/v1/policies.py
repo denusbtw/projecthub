@@ -2,13 +2,7 @@ from rest_framework.generics import get_object_or_404
 
 from projecthub.core.api.policies import BasePolicy
 from projecthub.tasks.models import Task
-
-
-def resolve_task_id_from_view(view):
-    if hasattr(view, "get_task_id"):
-        return view.get_task_id()
-    else:
-        return view.kwargs.get("task_id")
+from projecthub.tasks.utils import resolve_task_id_from_view
 
 
 class IsTaskResponsiblePolicy(BasePolicy):
