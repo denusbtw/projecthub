@@ -1,9 +1,8 @@
-from rest_framework import exceptions
-from rest_framework.generics import GenericAPIView
+from rest_framework import exceptions, generics
 
 
 # not final version
-class SecureGenericAPIView(GenericAPIView):
+class SecureGenericAPIView(generics.GenericAPIView):
     policy_classes = []
 
     def not_found(self, request, message=None, code=None):

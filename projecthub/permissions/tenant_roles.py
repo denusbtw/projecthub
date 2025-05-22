@@ -1,15 +1,14 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import BasePermission
 
 from projecthub.core.models import TenantMembership
+from .utils import get_tenant_membership
 
 
-def get_tenant_membership(tenant, user):
-    return TenantMembership.objects.filter(tenant=tenant, user=user).first()
-
-
-class ReadOnlyPermission(BasePermission):
-    def has_permission(self, request, view):
-        return request.method in SAFE_METHODS
+class IsTenantOwnerForCore(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return TenantMembership.objects.filter(
+            tenant=obj, user=request.user, role=TenantMembership.Role.OWNER
+        ).exists()
 
 
 class IsTenantMemberPermission(BasePermission):
@@ -32,9 +31,3 @@ class IsTenantOwnerPermission(BasePermission):
             tenant=request.tenant, user=request.user
         )
         return membership and membership.is_owner
-
-
-
-class IsSelfDeletePermission(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        return request.method == "DELETE" and request.user == obj.user

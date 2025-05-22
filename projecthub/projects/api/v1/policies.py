@@ -1,8 +1,6 @@
 from projecthub.core.api.policies import BasePolicy
-from projecthub.projects.utils import (
-    resolve_project_id_from_obj,
-    get_project_membership, resolve_project_id_from_view
-)
+from projecthub.permissions.utils import get_project_membership, \
+    resolve_project_id_from_obj, resolve_project_id_from_view
 
 
 class IsProjectMemberPolicy(BasePolicy):

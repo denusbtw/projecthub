@@ -1,19 +1,20 @@
 from rest_framework import permissions, generics
 
 from projecthub.attachments.api.views.pagination import AttachmentPagination
-from projecthub.core.api.permissions import IsTenantOwnerPermission, ReadOnlyPermission
 from projecthub.core.api.policies import (
     IsAuthenticatedPolicy,
     IsAdminUserPolicy,
     IsTenantOwnerPolicy
 )
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
-from projecthub.projects.api.v1.permissions import (
+from projecthub.permissions import (
+    IsTenantOwnerPermission,
     IsProjectStaffPermission,
-    IsProjectOwnerPermission
+    IsTaskResponsiblePermission,
+    ReadOnlyPermission,
+    IsProjectOwnerPermission,
 )
 from projecthub.projects.api.v1.policies import IsProjectStaffPolicy
-from projecthub.tasks.api.v1.permission import IsTaskResponsiblePermission
 from projecthub.tasks.api.v1.policies import IsTaskResponsiblePolicy
 
 

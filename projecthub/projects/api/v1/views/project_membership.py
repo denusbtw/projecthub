@@ -1,13 +1,17 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, filters, permissions
 
-from projecthub.core.api.permissions import IsTenantOwnerPermission, ReadOnlyPermission
 from projecthub.core.api.policies import IsAuthenticatedPolicy, IsAdminUserPolicy, \
     IsTenantOwnerPolicy
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
+from projecthub.permissions import (
+    ReadOnlyPermission,
+    IsTenantOwnerPermission,
+    IsProjectStaffPermission,
+    CanManageProjectMembershipPermission
+)
 from projecthub.projects.models import ProjectMembership
 from ..filters import ProjectMembershipFilterSet
-from ..permissions import IsProjectStaffPermission, CanManageProjectMembershipPermission
 from ..policies import IsProjectMemberPolicy
 from ..serializers import (
     ProjectMembershipCreateSerializer,

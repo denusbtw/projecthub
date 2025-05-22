@@ -2,16 +2,15 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, filters
 
 from projecthub.core.models import Tenant
+from projecthub.permissions import ReadOnlyPermission, IsTenantOwnerForCore
 from .pagination import TenantPagination
 from ..filters import TenantFilterSet
-from ..permissions import IsTenantOwnerForCore
 from ..serializers import (
     TenantCreateSerializer,
     TenantListSerializer,
     TenantUpdateSerializer,
     TenantDetailSerializer,
 )
-from ...permissions import ReadOnlyPermission
 
 
 class TenantListCreateAPIView(generics.ListCreateAPIView):

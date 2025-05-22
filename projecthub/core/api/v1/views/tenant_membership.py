@@ -11,8 +11,11 @@ from projecthub.core.api.v1.serializers import (
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.core.api.v1.views.pagination import TenantMembershipPagination
 from projecthub.core.models import TenantMembership
-from ...permissions import IsTenantOwnerPermission, ReadOnlyPermission, \
+from projecthub.permissions import (
+    ReadOnlyPermission,
+    IsTenantOwnerPermission,
     IsSelfDeletePermission
+)
 from ...policies import (
     IsAuthenticatedPolicy,
     IsAdminUserPolicy,

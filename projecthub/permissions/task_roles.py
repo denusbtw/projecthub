@@ -2,7 +2,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import BasePermission
 
 from projecthub.tasks.models import Task
-from projecthub.tasks.utils import resolve_task_id_from_view
+from .utils import resolve_task_id_from_view
 
 
 class TaskResponsibleHasNoDeletePermission(BasePermission):

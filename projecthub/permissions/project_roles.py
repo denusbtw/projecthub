@@ -2,11 +2,11 @@ from rest_framework.permissions import BasePermission
 
 from projecthub.core.models import TenantMembership
 from projecthub.projects.models import ProjectMembership
-from projecthub.projects.utils import (
-    get_project_membership,
+from projecthub.projects.utils import get_role_value
+from .utils import (
     resolve_project_id_from_obj,
-    resolve_project_id_from_view,
-    get_role_value
+    get_project_membership,
+    resolve_project_id_from_view
 )
 
 
