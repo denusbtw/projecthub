@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import environ
+from botocore.config import Config as BotoConfig
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 APPS_DIR = BASE_DIR / "projecthub"
@@ -31,7 +32,8 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     "rest_framework",
-    "django_filters"
+    "django_filters",
+    "storages"
 ]
 
 LOCAL_APPS = [
@@ -105,10 +107,6 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
-MEDIA_ROOT = str(APPS_DIR / "media")
-MEDIA_URL = "/media/"
-
-
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 X_FRAME_OPTIONS = "DENY"
@@ -136,3 +134,37 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAdminUser",),
     "EXCEPTION_HANDLER": "projecthub.core.utils.custom_exception_handler",
 }
+
+
+AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
+AWS_QUERYSTRING_AUTH = True
+AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default=None)
+AWS_S3_ENDPOINT_URL = f"https://s3.{AWS_S3_REGION_NAME}.backblazeb2.com"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "access_key": AWS_ACCESS_KEY_ID,
+            "secret_key": AWS_SECRET_ACCESS_KEY,
+            "bucket_name": AWS_STORAGE_BUCKET_NAME,
+            "region_name": AWS_S3_REGION_NAME,
+            "endpoint_url": AWS_S3_ENDPOINT_URL,
+            "addressing_style": "path",
+            "signature_version": "s3v4",
+            "querystring_auth": AWS_QUERYSTRING_AUTH,
+            "default_acl": None,
+            "client_config": BotoConfig(
+                request_checksum_calculation="when_required",
+                response_checksum_validation="when_required",
+            ),
+        },
+    },
+    "staticfiles": {
+       "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.backblazeb2.com/media/"
