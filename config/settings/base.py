@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -39,6 +40,7 @@ LOCAL_APPS = [
     "projecthub.projects",
     "projecthub.tasks",
     "projecthub.comments",
+    "projecthub.attachments"
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
