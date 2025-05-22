@@ -1,13 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, filters, permissions
 
-from projecthub.core.api.v1.filters import TenantMembershipFilterSet
-from projecthub.core.api.v1.serializers import (
-    TenantMembershipCreateSerializer,
-    TenantMembershipListSerializer,
-    TenantMembershipUpdateSerializer,
-    TenantMembershipDetailSerializer,
-)
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.core.api.v1.views.pagination import TenantMembershipPagination
 from projecthub.core.models import TenantMembership
@@ -16,10 +9,17 @@ from projecthub.permissions import (
     IsTenantOwnerPermission,
     IsSelfDeletePermission
 )
-from ...policies import (
+from projecthub.policies import (
     IsAuthenticatedPolicy,
     IsAdminUserPolicy,
     IsTenantMemberPolicy
+)
+from ..filters import TenantMembershipFilterSet
+from ..serializers import (
+    TenantMembershipCreateSerializer,
+    TenantMembershipListSerializer,
+    TenantMembershipUpdateSerializer,
+    TenantMembershipDetailSerializer,
 )
 
 

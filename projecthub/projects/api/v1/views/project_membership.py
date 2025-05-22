@@ -1,8 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, filters, permissions
 
-from projecthub.core.api.policies import IsAuthenticatedPolicy, IsAdminUserPolicy, \
-    IsTenantOwnerPolicy
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.permissions import (
     ReadOnlyPermission,
@@ -10,16 +8,21 @@ from projecthub.permissions import (
     IsProjectStaffPermission,
     CanManageProjectMembershipPermission
 )
+from projecthub.policies import (
+    IsAuthenticatedPolicy,
+    IsAdminUserPolicy,
+    IsTenantOwnerPolicy,
+    IsProjectMemberPolicy,
+)
 from projecthub.projects.models import ProjectMembership
+from .pagination import ProjectMembershipPagination
 from ..filters import ProjectMembershipFilterSet
-from ..policies import IsProjectMemberPolicy
 from ..serializers import (
     ProjectMembershipCreateSerializer,
     ProjectMembershipListSerializer,
     ProjectMembershipUpdateSerializer,
     ProjectMembershipDetailSerializer,
 )
-from ..views.pagination import ProjectMembershipPagination
 
 
 class ProjectMembershipListCreateAPIView(SecureGenericAPIView,

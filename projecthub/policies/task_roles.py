@@ -1,8 +1,8 @@
 from rest_framework.generics import get_object_or_404
 
-from projecthub.core.api.policies import BasePolicy
 from projecthub.permissions.utils import resolve_task_id_from_view
 from projecthub.tasks.models import Task
+from .base import BasePolicy
 
 
 class IsTaskResponsiblePolicy(BasePolicy):

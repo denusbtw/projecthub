@@ -1,8 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, filters, permissions
 
-from projecthub.core.api.policies import IsAuthenticatedPolicy, IsAdminUserPolicy, \
-    IsTenantOwnerPolicy
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.permissions import (
     ReadOnlyPermission,
@@ -10,7 +8,12 @@ from projecthub.permissions import (
     IsProjectStaffPermission,
     TaskResponsibleHasNoDeletePermission
 )
-from projecthub.projects.api.v1.policies import IsProjectMemberPolicy
+from projecthub.policies import (
+    IsAuthenticatedPolicy,
+    IsAdminUserPolicy,
+    IsTenantOwnerPolicy,
+    IsProjectMemberPolicy,
+)
 from projecthub.tasks.models import Task
 from .pagination import TaskPagination
 from ..filters import TaskFilterSet

@@ -1,10 +1,13 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, filters
 
-from projecthub.core.api.policies import IsAuthenticatedPolicy, IsAdminUserPolicy, \
-    IsTenantMemberPolicy
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.permissions import ReadOnlyPermission, IsTenantOwnerPermission
+from projecthub.policies import (
+    IsAuthenticatedPolicy,
+    IsAdminUserPolicy,
+    IsTenantMemberPolicy
+)
 from projecthub.tasks.models import Board
 from .pagination import BoardPagination
 from ..filters import BoardFilterSet

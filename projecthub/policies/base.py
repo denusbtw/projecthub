@@ -1,7 +1,5 @@
 from rest_framework.exceptions import PermissionDenied
 
-from projecthub.core.utils import get_tenant_membership
-
 
 class OperationHolderMixin:
     def __and__(self, other):
@@ -149,21 +147,3 @@ class IsAdminUserPolicy(BasePolicy):
 
     def has_access(self, request, view):
         return bool(request.user and request.user.is_staff)
-
-
-class IsTenantMemberPolicy(BasePolicy):
-
-    def has_access(self, request, view):
-        membership = get_tenant_membership(
-            tenant=request.tenant, user=request.user
-        )
-        return bool(membership)
-
-
-class IsTenantOwnerPolicy(BasePolicy):
-
-    def has_access(self, request, view):
-        membership = get_tenant_membership(
-            tenant=request.tenant, user=request.user
-        )
-        return membership and membership.is_owner
