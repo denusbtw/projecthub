@@ -16,11 +16,11 @@ from ...models import CommentAttachment
 class BaseCommentAttachmentAPIView(BaseAttachmentAPIView):
 
     def get_queryset(self):
-        return CommentAttachment.objects.filter(
-            comment__task__project__tenant=self.request.tenant,
-            comment_id=self.kwargs["comment_id"]
-        )
+        qs = CommentAttachment.objects.for_tenant(self.request.tenant)
+        qs = qs.for_comment(self.kwargs["comment_id"])
+        return qs
 
+    # TODO: cache `comment`
     def get_project_id(self):
         comment = self.get_comment()
         return comment.task.project_id

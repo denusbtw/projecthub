@@ -27,12 +27,32 @@ class Attachment(UUIDModel):
         return self.file.name
 
 
+class TaskAttachmentQuerySet(models.QuerySet):
+
+    def for_tenant(self, tenant):
+        return self.filter(task__project__tenant=tenant)
+
+    def for_task(self, task_id):
+        return self.filter(task_id=task_id)
+
+
 class TaskAttachment(Attachment):
     task = models.ForeignKey(
         Task,
         on_delete=models.CASCADE,
         related_name="attachments"
     )
+
+    objects = TaskAttachmentQuerySet.as_manager()
+
+
+class CommentAttachmentQuerySet(models.QuerySet):
+
+    def for_tenant(self, tenant):
+        return self.filter(comment__task__project__tenant=tenant)
+
+    def for_comment(self, comment_id):
+        return self.filter(comment_id=comment_id)
 
 
 class CommentAttachment(Attachment):
@@ -41,3 +61,5 @@ class CommentAttachment(Attachment):
         on_delete=models.CASCADE,
         related_name="attachments"
     )
+
+    objects = CommentAttachmentQuerySet.as_manager()

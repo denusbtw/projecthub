@@ -10,10 +10,9 @@ from ..serializers import TaskAttachmentWriteSerializer, TaskAttachmentReadSeria
 class BaseTaskAttachmentAPIView(BaseAttachmentAPIView):
 
     def get_queryset(self):
-        return TaskAttachment.objects.filter(
-            task__project__tenant=self.request.tenant,
-            task_id=self.kwargs["task_id"]
-        )
+        qs = TaskAttachment.objects.for_tenant(self.request.tenant)
+        qs = qs.for_task(self.kwargs["task_id"])
+        return qs
 
     def get_project_id(self):
         task = get_object_or_404(
