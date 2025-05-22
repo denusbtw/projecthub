@@ -2,6 +2,7 @@ from rest_framework.exceptions import PermissionDenied
 
 
 class OperationHolderMixin:
+
     def __and__(self, other):
         return OperandHolder(AND, self, other)
 
@@ -19,6 +20,7 @@ class OperationHolderMixin:
 
 
 class SingleOperandHolder(OperationHolderMixin):
+
     def __init__(self, operator_class, op1_class):
         self.operator_class = operator_class
         self.op1_class = op1_class
@@ -29,6 +31,7 @@ class SingleOperandHolder(OperationHolderMixin):
 
 
 class OperandHolder(OperationHolderMixin):
+
     def __init__(self, operator_class, op1_class, op2_class):
         self.operator_class = operator_class
         self.op1_class = op1_class
@@ -52,6 +55,7 @@ class OperandHolder(OperationHolderMixin):
 
 
 class AND:
+
     def __init__(self, op1, op2):
         self.op1 = op1
         self.op2 = op2
@@ -70,6 +74,7 @@ class AND:
 
 
 class OR:
+
     def __init__(self, op1, op2):
         self.op1 = op1
         self.op2 = op2
@@ -91,6 +96,7 @@ class OR:
 
 
 class NOT:
+
     def __init__(self, op1):
         self.op1 = op1
 

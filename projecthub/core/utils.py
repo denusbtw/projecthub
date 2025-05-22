@@ -1,6 +1,9 @@
 from rest_framework.views import exception_handler
 
-from projecthub.core.models import TenantMembership
+from projecthub.attachments.models import CommentAttachment, TaskAttachment
+from projecthub.comments.models import Comment
+from projecthub.projects.models import Project, ProjectMembership
+from projecthub.tasks.models import Task
 
 
 def custom_exception_handler(exc, context):
@@ -15,5 +18,33 @@ def custom_exception_handler(exc, context):
     return response
 
 
-def get_tenant_membership(tenant, user):
-    return TenantMembership.objects.filter(user=user, tenant=tenant).first()
+def get_project_id_from_obj(obj):
+    match obj:
+        case Project():
+            return obj.pk
+        case ProjectMembership():
+            return obj.project_id
+        case Task():
+            return obj.project_id
+        case Comment():
+            return obj.task.project_id
+        case CommentAttachment():
+            return obj.comment.task.project_id
+        case TaskAttachment():
+            return obj.task.project_id
+        case _:
+            return None
+
+
+def get_project_id_from_view(view):
+    if hasattr(view, "get_project_id"):
+        return view.get_project_id()
+    else:
+        return view.kwargs.get("project_id")
+
+
+def get_task_id_from_view(view):
+    if hasattr(view, "get_task_id"):
+        return view.get_task_id()
+    else:
+        return view.kwargs.get("task_id")
