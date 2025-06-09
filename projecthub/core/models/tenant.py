@@ -82,10 +82,3 @@ class Tenant(UUIDModel, TimestampedModel):
             self.is_active = False
             self.updated_by = updated_by
             self.save(update_fields=["is_active", "updated_by"])
-
-    #TODO: refactor
-    def has_role(self, role: str, user=None):
-        qs = self.members.filter(role=role)
-        if user:
-            qs = qs.filter(user=user)
-        return qs.exists()

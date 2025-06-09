@@ -5,6 +5,7 @@ from projecthub.users.tests.factories import UserFactory
 
 
 class TenantFactory(factory.django.DjangoModelFactory):
+    owner = factory.SubFactory(UserFactory)
     name = factory.Faker("word")
     sub_domain = factory.Sequence(lambda n: f"sub_domain_{n}")
     is_active = True
