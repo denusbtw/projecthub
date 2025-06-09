@@ -3,17 +3,14 @@ from .comment_roles import IsCommentAuthorPermission
 from .project_roles import (
     IsProjectOwnerPermission,
     IsProjectStaffPermission,
-    CanManageProjectMembershipPermission
 )
 from .task_roles import (
     TaskResponsibleHasNoDeletePermission,
-    IsTaskResponsiblePermission
+    IsTaskResponsiblePermission,
 )
 from .tenant_roles import (
     IsTenantOwnerPermission,
     IsTenantMemberPermission,
-    IsTenantOwnerForCore
+    IsTenantOwnerForCore,
 )
-from .user_roles import (
-    IsSelfDeletePermission
-)
+from .user_roles import IsSelfDeletePermission

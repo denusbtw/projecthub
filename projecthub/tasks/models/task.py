@@ -11,6 +11,7 @@ from projecthub.projects.models import ProjectMembership, Project
 
 
 class TaskQuerySet(models.QuerySet):
+
     def for_tenant(self, tenant):
         return self.filter(project__tenant=tenant)
 

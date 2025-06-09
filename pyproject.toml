@@ -15,4 +15,5 @@ dependencies = [
     "psycopg2>=2.9.10",
     "pytest>=8.4.0",
     "pytest-django>=4.11.1",
+    "pytest-mock>=3.14.1",
 ]

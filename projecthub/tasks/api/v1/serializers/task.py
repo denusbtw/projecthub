@@ -4,7 +4,6 @@ from projecthub.core.api.v1.serializers.base import UserNestedSerializer
 from projecthub.tasks.models import Task, Board
 
 
-# ==== Task serializers ==== #
 class BaseTaskReadSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
@@ -29,7 +28,23 @@ class TaskDetailSerializer(BaseTaskReadSerializer):
     description = serializers.CharField()
 
 
-class BaseTaskWriteSerializer(serializers.ModelSerializer):
+class TaskCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = (
+            "id",
+            "name",
+            "board",
+            "priority",
+            "description",
+            "responsible",
+            "start_date",
+            "end_date",
+            "close_date",
+        )
+
+
+class TaskUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = (
@@ -42,15 +57,6 @@ class BaseTaskWriteSerializer(serializers.ModelSerializer):
             "end_date",
             "close_date",
         )
-
-
-class TaskCreateSerializer(BaseTaskWriteSerializer):
-    def to_representation(self, instance):
-        return TaskListSerializer(instance, context=self.context).data
-
-
-class TaskUpdateSerializer(BaseTaskWriteSerializer):
-    class Meta(BaseTaskWriteSerializer.Meta):
         extra_kwargs = {"name": {"required": False}}
 
 
@@ -61,21 +67,21 @@ class TaskUpdateSerializerForResponsible(serializers.ModelSerializer):
 
     def validate_board(self, new_board):
         allowed_transitions = {
-            Board.TODO: [None, Board.IN_PROGRESS],
-            Board.IN_PROGRESS: [None, Board.TODO, Board.IN_REVIEW],
-            Board.IN_REVIEW: [Board.TODO, Board.IN_PROGRESS],
-            Board.DONE: [],
+            Board.Type.TODO: [None, Board.Type.IN_PROGRESS],
+            Board.Type.IN_PROGRESS: [None, Board.Type.TODO, Board.Type.IN_REVIEW],
+            Board.Type.IN_REVIEW: [Board.Type.TODO, Board.Type.IN_PROGRESS],
+            Board.Type.DONE: [],
         }
-        
+
         task = self.instance
         current_board = task.board
 
         if new_board == current_board:
             return new_board
 
-        new_board_code = new_board.code if new_board else None
+        new_board_type = new_board.type if new_board else None
         new_board_name = new_board.name if new_board else None
-        if new_board_code not in allowed_transitions.get(current_board.code):
+        if new_board_type not in allowed_transitions.get(current_board.type):
             raise serializers.ValidationError(
                 f"You can't move task from {current_board.name} to {new_board_name}"
             )
@@ -94,38 +100,5 @@ class TaskUpdateSerializerForResponsible(serializers.ModelSerializer):
             instance.revoke(user)
             return instance
 
-        instance.set_board(new_board.code, user)
+        instance.set_board(new_board, user)
         return instance
-
-
-# ==== Board serializers ==== #
-class BaseBoardReadSerializer(serializers.Serializer):
-    id = serializers.UUIDField()
-    name = serializers.CharField()
-    code = serializers.CharField()
-    order = serializers.IntegerField()
-    is_default = serializers.BooleanField()
-
-
-class BoardListSerializer(BaseBoardReadSerializer):
-    pass
-
-
-class BoardDetailSerializer(BaseBoardReadSerializer):
-    pass
-
-
-class BaseBoardWriteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Board
-        fields = ("name", "order")
-
-
-class BoardCreateSerializer(BaseBoardWriteSerializer):
-    def to_representation(self, instance):
-        return BoardListSerializer(instance, context=self.context).data
-
-
-class BoardUpdateSerializer(BaseBoardWriteSerializer):
-    class Meta(BaseBoardWriteSerializer.Meta):
-        extra_kwargs = {"name": {"required": False}, "order": {"required": False}}

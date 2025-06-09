@@ -1,21 +1,13 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import OuterRef, Subquery
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from projecthub.core.models import UUIDModel, TimestampedModel, Tenant
-from .project_membership import ProjectMembership
 
 
 class ProjectQuerySet(models.QuerySet):
-
-    def annotate_role(self, user):
-        role_subquery = ProjectMembership.objects.filter(
-            project_id=OuterRef("pk"), user=user
-        ).values("role")[:1]
-        return self.annotate(role=Subquery(role_subquery))
 
     def for_tenant(self, tenant):
         return self.filter(tenant=tenant)
@@ -23,7 +15,13 @@ class ProjectQuerySet(models.QuerySet):
     def visible_to(self, user, tenant):
         if user.is_staff or tenant.owner_id == user.id:
             return self
-        return self.filter(members__user=user)
+
+        return self.filter(
+            models.Q(owner=user)
+            | models.Q(supervisor=user)
+            | models.Q(responsible=user)
+            | models.Q(members__user=user)
+        )
 
 
 class Project(UUIDModel, TimestampedModel):
@@ -44,7 +42,7 @@ class Project(UUIDModel, TimestampedModel):
         null=True,
         blank=True,
         related_name="owned_projects",
-        help_text=_("Owner of project")
+        help_text=_("Owner of project"),
     )
     supervisor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -52,7 +50,7 @@ class Project(UUIDModel, TimestampedModel):
         null=True,
         blank=True,
         related_name="supervised_projects",
-        help_text=_("Supervisor of project")
+        help_text=_("Supervisor of project"),
     )
     responsible = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -60,7 +58,7 @@ class Project(UUIDModel, TimestampedModel):
         null=True,
         blank=True,
         related_name="responsible_projects",
-        help_text=_("Responsible of project")
+        help_text=_("Responsible of project"),
     )
     name = models.CharField(max_length=255, help_text=_("Name of project."))
     status = models.CharField(
@@ -167,7 +165,9 @@ class Project(UUIDModel, TimestampedModel):
             self.updated_by = updated_by
             self.updated_at = now
             self.close_date = now
-            self.save(update_fields=["status", "updated_by", "updated_at", "close_date"])
+            self.save(
+                update_fields=["status", "updated_by", "updated_at", "close_date"]
+            )
 
     @property
     def is_active(self):
@@ -187,7 +187,7 @@ class Project(UUIDModel, TimestampedModel):
             return self.end_date - self.start_date
         return None
 
-    #TODO: refactor
+    # TODO: refactor
     def has_role(self, role: str, user=None):
         # if user is not provided, then checks whether project has user with such role
         # if user is provided, checks whether user has such role in project

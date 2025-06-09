@@ -1,4 +1,5 @@
-from rest_framework import permissions, generics
+from rest_framework import generics, permissions
+from rest_framework.pagination import PageNumberPagination
 
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.permissions import (
@@ -15,7 +16,13 @@ from projecthub.policies import (
     IsProjectStaffPolicy,
     IsTaskResponsiblePolicy,
 )
-from .pagination import AttachmentPagination
+
+
+# TODO::
+class AttachmentPagination(PageNumberPagination):
+    page_size = 30
+    max_page_size = 200
+    page_size_query_param = "page_size"
 
 
 class BaseAttachmentAPIView(SecureGenericAPIView):
@@ -46,15 +53,10 @@ class AttachmentListCreateAPIView(BaseAttachmentAPIView, generics.ListCreateAPIV
         | ReadOnlyPermission
     ]
 
-    def get_serializer_class(self):
-        raise NotImplementedError("Subclasses must implement this method.")
 
-    def perform_create(self, serializer):
-        raise NotImplementedError("Subclasses must implement this method.")
-
-
-class AttachmentRetrieveDestroyAPIView(BaseAttachmentAPIView,
-                                       generics.RetrieveDestroyAPIView):
+class AttachmentRetrieveDestroyAPIView(
+    BaseAttachmentAPIView, generics.RetrieveDestroyAPIView
+):
     serializer_class = None
     permission_classes = [
         permissions.IsAdminUser

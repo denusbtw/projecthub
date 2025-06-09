@@ -5,7 +5,7 @@ from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.permissions import (
     ReadOnlyPermission,
     IsTenantOwnerPermission,
-    IsProjectOwnerPermission
+    IsProjectOwnerPermission,
 )
 from projecthub.policies import (
     IsAuthenticatedPolicy,
@@ -27,8 +27,7 @@ from ..serializers import (
 
 class ProjectListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
     policy_classes = [
-        IsAuthenticatedPolicy
-        & (IsAdminUserPolicy | IsTenantMemberPolicy)
+        IsAuthenticatedPolicy & (IsAdminUserPolicy | IsTenantMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated
@@ -38,16 +37,15 @@ class ProjectListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView)
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
-        filters.OrderingFilter
+        filters.OrderingFilter,
     ]
     filterset_class = ProjectFilterSet
-    search_fields = ["name"] #TODO: add search by description
+    search_fields = ["name"]  # TODO: add search by description
     ordering_fields = ["name", "created_at", "start_date", "end_date", "close_date"]
 
     def get_queryset(self):
         qs = Project.objects.for_tenant(self.request.tenant)
         qs = qs.visible_to(user=self.request.user, tenant=self.request.tenant)
-        qs = qs.annotate_role(self.request.user)
         return qs
 
     def get_serializer_class(self):
@@ -58,20 +56,20 @@ class ProjectListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView)
     def perform_create(self, serializer):
         serializer.save(
             tenant=self.request.tenant,
+            owner=self.request.user,
+            supervisor=self.request.user,
+            responsible=self.request.user,
             created_by=self.request.user,
             updated_by=self.request.user,
         )
 
 
-class ProjectRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
-                                          generics.RetrieveUpdateDestroyAPIView):
+class ProjectRetrieveUpdateDestroyAPIView(
+    SecureGenericAPIView, generics.RetrieveUpdateDestroyAPIView
+):
     policy_classes = [
         IsAuthenticatedPolicy
-        & (
-            IsAdminUserPolicy
-            | IsTenantOwnerPolicy
-            | IsProjectMemberPolicy
-        )
+        & (IsAdminUserPolicy | IsTenantOwnerPolicy | IsProjectMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated
@@ -86,7 +84,6 @@ class ProjectRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
     def get_queryset(self):
         qs = Project.objects.for_tenant(self.request.tenant)
         qs = qs.visible_to(user=self.request.user, tenant=self.request.tenant)
-        qs = qs.annotate_role(self.request.user)
         return qs
 
     def get_serializer_class(self):

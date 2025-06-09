@@ -143,6 +143,8 @@ AWS_QUERYSTRING_AUTH = True
 AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default=None)
 AWS_S3_ENDPOINT_URL = f"https://s3.{AWS_S3_REGION_NAME}.backblazeb2.com"
 
+
+#TODO: use Cloudflare R2
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3.S3Storage",

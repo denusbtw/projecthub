@@ -1,13 +1,20 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, filters
+from rest_framework.generics import get_object_or_404
 
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
-from projecthub.permissions import ReadOnlyPermission, IsTenantOwnerPermission
+from projecthub.permissions import (
+    ReadOnlyPermission,
+    IsTenantOwnerPermission,
+    IsProjectStaffPermission,
+)
 from projecthub.policies import (
     IsAuthenticatedPolicy,
     IsAdminUserPolicy,
-    IsTenantMemberPolicy
+    IsTenantOwnerPolicy,
+    IsProjectMemberPolicy,
 )
+from projecthub.projects.models import Project
 from projecthub.tasks.models import Board
 from .pagination import BoardPagination
 from ..filters import BoardFilterSet
@@ -20,7 +27,7 @@ from ..serializers import (
 
 
 class BoardListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
-    #TODO: such docstring for each view
+    # TODO: such docstring for each view
     """
     API view for listing and creating boards.
 
@@ -33,24 +40,30 @@ class BoardListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
     """
     policy_classes = [
         IsAuthenticatedPolicy
-        & (IsAdminUserPolicy | IsTenantMemberPolicy)
+        & (IsAdminUserPolicy | IsTenantOwnerPolicy | IsProjectMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated
-        & (permissions.IsAdminUser | IsTenantOwnerPermission | ReadOnlyPermission)
+        & (
+            permissions.IsAdminUser
+            | IsTenantOwnerPermission
+            | IsProjectStaffPermission
+            | ReadOnlyPermission
+        )
     ]
     pagination_class = BoardPagination
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
-        filters.OrderingFilter
+        filters.OrderingFilter,
     ]
     filterset_class = BoardFilterSet
-    search_fields = ["name", "code"]
-    ordering_fields = ["name", "order", "created_at", "is_default"]
+    search_fields = ["name", "type"]
+    ordering_fields = ["name", "order", "created_at"]
 
     def get_queryset(self):
-        return Board.objects.for_tenant(self.request.tenant)
+        project = get_object_or_404(Project, pk=self.get_project_id())
+        return Board.objects.for_project(project)
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -59,25 +72,35 @@ class BoardListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(
-            tenant=self.request.tenant,
+            project_id=self.get_project_id(),
             created_by=self.request.user,
             updated_by=self.request.user,
         )
 
+    def get_project_id(self):
+        return self.kwargs["project_id"]
 
-class BoardRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
-                                        generics.RetrieveUpdateDestroyAPIView):
+
+class BoardRetrieveUpdateDestroyAPIView(
+    SecureGenericAPIView, generics.RetrieveUpdateDestroyAPIView
+):
     policy_classes = [
         IsAuthenticatedPolicy
-        & (IsAdminUserPolicy | IsTenantMemberPolicy)
+        & (IsAdminUserPolicy | IsTenantOwnerPolicy | IsProjectMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated
-        & (permissions.IsAdminUser | IsTenantOwnerPermission | ReadOnlyPermission)
+        & (
+            permissions.IsAdminUser
+            | IsTenantOwnerPermission
+            | IsProjectStaffPermission
+            | ReadOnlyPermission
+        )
     ]
 
     def get_queryset(self):
-        return Board.objects.for_tenant(tenant=self.request.tenant)
+        project = get_object_or_404(Project, pk=self.get_project_id())
+        return Board.objects.for_project(project=project)
 
     def get_serializer_class(self):
         if self.request.method in {"PUT", "PATCH"}:
@@ -86,3 +109,6 @@ class BoardRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
+
+    def get_project_id(self):
+        return self.kwargs["project_id"]

@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 
 from projecthub.comments.models import Comment
-from projecthub.projects.models import ProjectMembership
 
 
 @pytest.fixture
@@ -17,8 +16,7 @@ def list_url(task):
 @pytest.fixture
 def detail_url(comment):
     return reverse(
-        "api:v1:comment_detail",
-        kwargs={"task_id": comment.task_id, "pk": comment.pk}
+        "api:v1:comment_detail", kwargs={"task_id": comment.task_id, "pk": comment.pk}
     )
 
 
@@ -34,20 +32,26 @@ class TestCommentListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_403_FORBIDDEN), ("post", status.HTTP_403_FORBIDDEN)],
+            [
+                ("get", status.HTTP_403_FORBIDDEN),
+                ("post", status.HTTP_403_FORBIDDEN),
+            ],
         )
         def test_anonymous_user(
-                self, api_client, list_url, http_host, method, expected_status_code
+            self, api_client, list_url, http_host, method, expected_status_code
         ):
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_404_NOT_FOUND), ("post", status.HTTP_404_NOT_FOUND)],
+            [
+                ("get", status.HTTP_404_NOT_FOUND),
+                ("post", status.HTTP_404_NOT_FOUND),
+            ],
         )
         def test_not_tenant_member(
-                self, api_client, list_url, http_host, user, method, expected_status_code
+            self, api_client, list_url, http_host, user, method, expected_status_code
         ):
             api_client.force_authenticate(user=user)
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
@@ -55,16 +59,19 @@ class TestCommentListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_404_NOT_FOUND), ("post", status.HTTP_404_NOT_FOUND)],
+            [
+                ("get", status.HTTP_404_NOT_FOUND),
+                ("post", status.HTTP_404_NOT_FOUND),
+            ],
         )
         def test_tenant_user_not_project_member(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                tenant_user,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            tenant_user,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=tenant_user.user)
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
@@ -72,16 +79,19 @@ class TestCommentListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_404_NOT_FOUND), ("post", status.HTTP_404_NOT_FOUND)],
+            [
+                ("get", status.HTTP_404_NOT_FOUND),
+                ("post", status.HTTP_404_NOT_FOUND),
+            ],
         )
         def test_project_reader(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_reader,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project_reader,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_reader.user)
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
@@ -89,16 +99,19 @@ class TestCommentListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_404_NOT_FOUND), ("post", status.HTTP_404_NOT_FOUND)],
+            [
+                ("get", status.HTTP_404_NOT_FOUND),
+                ("post", status.HTTP_404_NOT_FOUND),
+            ],
         )
         def test_project_guest(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_guest,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project_guest,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_guest.user)
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
@@ -106,17 +119,20 @@ class TestCommentListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_404_NOT_FOUND), ("post", status.HTTP_404_NOT_FOUND)],
+            [
+                ("get", status.HTTP_404_NOT_FOUND),
+                ("post", status.HTTP_404_NOT_FOUND),
+            ],
         )
         def test_project_user(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_user,
-                data,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project_user,
+            data,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_user.user)
             response = getattr(api_client, method)(
@@ -126,17 +142,20 @@ class TestCommentListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
+            [
+                ("get", status.HTTP_200_OK),
+                ("post", status.HTTP_201_CREATED),
+            ],
         )
         def test_task_responsible(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                task,
-                data,
-                method,
-                expected_status_code
+            self,
+            api_client,
+            list_url,
+            http_host,
+            task,
+            data,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=task.responsible)
             response = getattr(api_client, method)(
@@ -146,19 +165,22 @@ class TestCommentListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
+            [
+                ("get", status.HTTP_200_OK),
+                ("post", status.HTTP_201_CREATED),
+            ],
         )
         def test_project_responsible(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_responsible,
-                data,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project,
+            data,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_responsible.user)
+            api_client.force_authenticate(user=project.responsible)
             response = getattr(api_client, method)(
                 list_url, data=data, HTTP_HOST=http_host
             )
@@ -169,16 +191,16 @@ class TestCommentListCreateAPIView:
             [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
         )
         def test_project_supervisor(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_supervisor,
-                data,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project,
+            data,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_supervisor.user)
+            api_client.force_authenticate(user=project.supervisor)
             response = getattr(api_client, method)(
                 list_url, data=data, HTTP_HOST=http_host
             )
@@ -186,19 +208,22 @@ class TestCommentListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
+            [
+                ("get", status.HTTP_200_OK),
+                ("post", status.HTTP_201_CREATED),
+            ],
         )
         def test_project_owner(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_owner,
-                data,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project,
+            data,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_owner.user)
+            api_client.force_authenticate(user=project.owner)
             response = getattr(api_client, method)(
                 list_url, data=data, HTTP_HOST=http_host
             )
@@ -206,19 +231,22 @@ class TestCommentListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
+            [
+                ("get", status.HTTP_200_OK),
+                ("post", status.HTTP_201_CREATED),
+            ],
         )
         def test_tenant_owner(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                tenant_owner,
-                data,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            tenant,
+            data,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=tenant_owner.user)
+            api_client.force_authenticate(user=tenant.owner)
             response = getattr(api_client, method)(
                 list_url, data=data, HTTP_HOST=http_host
             )
@@ -229,13 +257,7 @@ class TestCommentListCreateAPIView:
             [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
         )
         def test_admin(
-                self,
-                admin_client,
-                list_url,
-                http_host,
-                data,
-                method,
-                expected_status_code
+            self, admin_client, list_url, http_host, data, method, expected_status_code
         ):
             response = getattr(admin_client, method)(
                 list_url, data=data, HTTP_HOST=http_host
@@ -243,7 +265,7 @@ class TestCommentListCreateAPIView:
             assert response.status_code == expected_status_code
 
     def test_pagination_works(
-            self, admin_client, list_url, task, http_host, comment_factory
+        self, admin_client, list_url, task, http_host, comment_factory
     ):
         comment_factory.create_batch(5, task=task)
         response = admin_client.get(list_url, {"page_size": 3}, HTTP_HOST=http_host)
@@ -251,14 +273,14 @@ class TestCommentListCreateAPIView:
         assert len(response.data["results"]) == 3
 
     def test_lists_comments_of_specific_task(
-            self,
-            admin_client,
-            list_url,
-            project,
-            http_host,
-            task,
-            task_factory,
-            comment_factory,
+        self,
+        admin_client,
+        list_url,
+        project,
+        http_host,
+        task,
+        task_factory,
+        comment_factory,
     ):
         comment_factory.create_batch(2, task=task)
 
@@ -270,7 +292,7 @@ class TestCommentListCreateAPIView:
         assert response.data["count"] == 2
 
     def test_perform_create(
-            self, admin_client, list_url, task, data, http_host, admin_user
+        self, admin_client, list_url, task, data, http_host, admin_user
     ):
         response = admin_client.post(list_url, data=data, HTTP_HOST=http_host)
         assert response.status_code == status.HTTP_201_CREATED
@@ -279,14 +301,7 @@ class TestCommentListCreateAPIView:
         assert comment.created_by == admin_user
 
     def test_filtering_works(
-            self,
-            admin_client,
-            list_url,
-            task,
-            comment_factory,
-            john,
-            alice,
-            http_host
+        self, admin_client, list_url, task, comment_factory, john, alice, http_host
     ):
         john_comment = comment_factory(task=task, created_by=john)
         alice_comment = comment_factory(task=task, created_by=alice)
@@ -295,7 +310,7 @@ class TestCommentListCreateAPIView:
         assert {c["id"] for c in response.data["results"]} == {str(john_comment.pk)}
 
     def test_search_works(
-            self, admin_client, list_url, task, comment_factory, http_host
+        self, admin_client, list_url, task, comment_factory, http_host
     ):
         abc_comment = comment_factory(body="abc", task=task)
         qwe_comment = comment_factory(body="qwe", task=task)
@@ -305,15 +320,13 @@ class TestCommentListCreateAPIView:
         assert {c["id"] for c in response.data["results"]} == {str(abc_comment.pk)}
 
     def test_ordering_works(
-            self, admin_client, list_url, task, comment_factory, http_host
+        self, admin_client, list_url, task, comment_factory, http_host
     ):
         old_comment = comment_factory(
-            created_at=timezone.make_aware(datetime(2000, 1, 1)),
-            task=task
+            created_at=timezone.make_aware(datetime(2000, 1, 1)), task=task
         )
         new_comment = comment_factory(
-            created_at=timezone.make_aware(datetime(2000, 2, 2)),
-            task=task
+            created_at=timezone.make_aware(datetime(2000, 2, 2)), task=task
         )
 
         query_params = {"ordering": "created_at"}
@@ -338,7 +351,7 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_anonymous_user(
-                self, api_client, detail_url, http_host, method, expected_status_code
+            self, api_client, detail_url, http_host, method, expected_status_code
         ):
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
@@ -353,7 +366,7 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_not_tenant_member(
-                self, api_client, detail_url, http_host, user, method, expected_status_code
+            self, api_client, detail_url, http_host, user, method, expected_status_code
         ):
             api_client.force_authenticate(user=user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -369,13 +382,13 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_tenant_user_not_project_member(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                tenant_user,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            tenant_user,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=tenant_user.user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -391,13 +404,13 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_project_reader(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_reader,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project_reader,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_reader.user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -413,13 +426,13 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_project_guest(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_guest,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project_guest,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_guest.user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -435,13 +448,13 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_project_user(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_user,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project_user,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_user.user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -457,14 +470,14 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_task_responsible(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                task,
-                user_factory,
-                method,
-                expected_status_code
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            task,
+            user_factory,
+            method,
+            expected_status_code,
         ):
             task.responsible = user_factory()
             task.save()
@@ -482,15 +495,15 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_project_responsible(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_responsible,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_responsible.user)
+            api_client.force_authenticate(user=project.responsible)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -504,15 +517,15 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_project_supervisor(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_supervisor,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_supervisor.user)
+            api_client.force_authenticate(user=project.supervisor)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -526,15 +539,15 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_project_owner(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_owner,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_owner.user)
+            api_client.force_authenticate(user=project.owner)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -548,15 +561,15 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_tenant_owner(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                tenant_owner,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            tenant,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=tenant_owner.user)
+            api_client.force_authenticate(user=tenant.owner)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -570,7 +583,7 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_admin(
-                self, admin_client, detail_url, http_host, method, expected_status_code
+            self, admin_client, detail_url, http_host, method, expected_status_code
         ):
             response = getattr(admin_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
@@ -585,15 +598,15 @@ class TestCommentDestroyAPIView:
             ],
         )
         def test_comment_author(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                comment,
-                task,
-                project_membership_factory,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            comment,
+            task,
+            project_membership_factory,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=comment.created_by)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)

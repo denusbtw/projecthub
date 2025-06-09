@@ -23,3 +23,7 @@ class UUIDModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+# TODO: maybe create base model that uses custom base queryset
+#  that demands to define `for_tenant` method

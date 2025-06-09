@@ -2,10 +2,6 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
-from projecthub.attachments.tests.factories import (
-    CommentAttachmentFactory,
-    TaskAttachmentFactory,
-)
 from projecthub.comments.tests.factories import CommentFactory
 from projecthub.core.models import TenantMembership
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
@@ -156,26 +152,6 @@ def john(db):
 @pytest.fixture
 def alice(db):
     return UserFactory(username="alice")
-
-
-@pytest.fixture
-def comment_attachment_factory():
-    return CommentAttachmentFactory
-
-
-@pytest.fixture
-def comment_attachment(comment):
-    return CommentAttachmentFactory(comment=comment)
-
-
-@pytest.fixture
-def task_attachment_factory():
-    return TaskAttachmentFactory
-
-
-@pytest.fixture
-def task_attachment(task):
-    return TaskAttachmentFactory(task=task)
 
 
 @pytest.fixture

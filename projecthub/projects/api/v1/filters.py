@@ -18,30 +18,28 @@ class ProjectFilterSet(filters.FilterSet):
     creator = filters.CharFilter(
         field_name="created_by__username", lookup_expr="icontains"
     )
-    owner = filters.CharFilter(method="filter_by_owner")
-    supervisor = filters.CharFilter(method="filter_by_supervisor")
-    responsible = filters.CharFilter(method="filter_by_responsible")
+    owner = filters.CharFilter(field_name="owner__username", lookup_expr="icontains")
+    supervisor = filters.CharFilter(
+        field_name="supervisor__username", lookup_expr="icontains"
+    )
+    responsible = filters.CharFilter(
+        field_name="responsible__username", lookup_expr="icontains"
+    )
 
     class Meta:
         model = Project
         fields = (
-            "status", "start_date_after", "start_date_before", "end_date_after",
-            "end_date_before", "close_date_after", "close_date_before", "creator",
-            "owner", "supervisor", "responsible"
-        )
-
-    def filter_by_owner(self, queryset, name, value):
-        return self._filter_by_role(queryset, value, ProjectMembership.Role.OWNER)
-
-    def filter_by_supervisor(self, queryset, name, value):
-        return self._filter_by_role(queryset, value, ProjectMembership.Role.SUPERVISOR)
-
-    def filter_by_responsible(self, queryset, name, value):
-        return self._filter_by_role(queryset, value, ProjectMembership.Role.RESPONSIBLE)
-
-    def _filter_by_role(self, queryset, value, role):
-        return queryset.filter(
-            members__user__username__icontains=value, members__role=role
+            "status",
+            "start_date_after",
+            "start_date_before",
+            "end_date_after",
+            "end_date_before",
+            "close_date_after",
+            "close_date_before",
+            "creator",
+            "owner",
+            "supervisor",
+            "responsible",
         )
 
 

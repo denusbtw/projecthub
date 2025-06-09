@@ -6,7 +6,6 @@ from projecthub.permissions import (
     ReadOnlyPermission,
     IsTenantOwnerPermission,
     IsProjectStaffPermission,
-    CanManageProjectMembershipPermission
 )
 from projecthub.policies import (
     IsAuthenticatedPolicy,
@@ -25,15 +24,12 @@ from ..serializers import (
 )
 
 
-class ProjectMembershipListCreateAPIView(SecureGenericAPIView,
-                                         generics.ListCreateAPIView):
+class ProjectMembershipListCreateAPIView(
+    SecureGenericAPIView, generics.ListCreateAPIView
+):
     policy_classes = [
         IsAuthenticatedPolicy
-        & (
-            IsAdminUserPolicy
-            | IsTenantOwnerPolicy
-            | IsProjectMemberPolicy
-        )
+        & (IsAdminUserPolicy | IsTenantOwnerPolicy | IsProjectMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated
@@ -48,7 +44,7 @@ class ProjectMembershipListCreateAPIView(SecureGenericAPIView,
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
-        filters.OrderingFilter
+        filters.OrderingFilter,
     ]
     filterset_class = ProjectMembershipFilterSet
     search_fields = ["user__username"]
@@ -73,7 +69,7 @@ class ProjectMembershipListCreateAPIView(SecureGenericAPIView,
         serializer.save(
             project_id=self.get_project_id(),
             created_by=self.request.user,
-            updated_by=self.request.user
+            updated_by=self.request.user,
         )
 
     def get_project_id(self):
@@ -85,25 +81,21 @@ class ProjectMembershipRetrieveUpdateDestroyAPIView(
 ):
     policy_classes = [
         IsAuthenticatedPolicy
-        & (
-            IsAdminUserPolicy
-            | IsTenantOwnerPolicy
-            | IsProjectMemberPolicy
-        )
+        & (IsAdminUserPolicy | IsTenantOwnerPolicy | IsProjectMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated
         & (
-                permissions.IsAdminUser
-                | IsTenantOwnerPermission
-                | CanManageProjectMembershipPermission
-                | ReadOnlyPermission
+            permissions.IsAdminUser
+            | IsTenantOwnerPermission
+            | IsProjectStaffPermission
+            | ReadOnlyPermission
         )
     ]
 
     def get_queryset(self):
         qs = ProjectMembership.objects.for_tenant(self.request.tenant)
-        qs = qs.for_project(self.kwargs["project_id"])
+        qs = qs.for_project(self.get_project_id())
         return qs
 
     def get_serializer_class(self):
@@ -113,8 +105,11 @@ class ProjectMembershipRetrieveUpdateDestroyAPIView(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context["project_id"] = self.kwargs["project_id"]
+        context["project_id"] = self.get_project_id()
         return context
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
+
+    def get_project_id(self):
+        return self.kwargs["project_id"]

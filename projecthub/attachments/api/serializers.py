@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from projecthub.core.api.v1.serializers.base import UserNestedSerializer
+from ..models import Attachment
 
 
 class AttachmentReadSerializer(serializers.Serializer):
@@ -9,15 +10,16 @@ class AttachmentReadSerializer(serializers.Serializer):
     uploaded_by = UserNestedSerializer()
     uploaded_at = serializers.DateTimeField()
 
+    # TODO: add nested serializers
+    task = serializers.UUIDField()
+    comment = serializers.UUIDField()
+
 
 class AttachmentWriteSerializer(serializers.ModelSerializer):
     class Meta:
-        model = None
-        fields = ("file",)
+        model = Attachment
+        fields = ("id", "file", "task", "comment")
 
     # TODO
     def validate_file(self, file):
         pass
-
-    def to_representation(self, instance):
-        raise NotImplementedError("Subclasses must implement this method.")

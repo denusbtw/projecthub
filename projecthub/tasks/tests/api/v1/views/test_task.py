@@ -13,8 +13,7 @@ def list_url(project):
 @pytest.fixture
 def detail_url(task):
     return reverse(
-        "api:v1:task_detail",
-        kwargs={"project_id": task.project_id, "pk": task.pk}
+        "api:v1:task_detail", kwargs={"project_id": task.project_id, "pk": task.pk}
     )
 
 
@@ -28,7 +27,7 @@ class TestTaskListCreateAPIView:
             [("get", status.HTTP_403_FORBIDDEN), ("post", status.HTTP_403_FORBIDDEN)],
         )
         def test_anonymous(
-                self, api_client, list_url, http_host, method, expected_status_code
+            self, api_client, list_url, http_host, method, expected_status_code
         ):
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
@@ -38,13 +37,13 @@ class TestTaskListCreateAPIView:
             [("get", status.HTTP_404_NOT_FOUND), ("post", status.HTTP_404_NOT_FOUND)],
         )
         def test_not_tenant_member(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                user_factory,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            user_factory,
+            method,
+            expected_status_code,
         ):
             user = user_factory()
             api_client.force_authenticate(user=user)
@@ -57,13 +56,13 @@ class TestTaskListCreateAPIView:
             [("get", status.HTTP_404_NOT_FOUND), ("post", status.HTTP_404_NOT_FOUND)],
         )
         def test_tenant_user_not_project_member(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                tenant_user,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            tenant_user,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=tenant_user.user)
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
@@ -74,13 +73,13 @@ class TestTaskListCreateAPIView:
             [("get", status.HTTP_200_OK), ("post", status.HTTP_403_FORBIDDEN)],
         )
         def test_project_reader(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_reader,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project_reader,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_reader.user)
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
@@ -91,13 +90,13 @@ class TestTaskListCreateAPIView:
             [("get", status.HTTP_200_OK), ("post", status.HTTP_403_FORBIDDEN)],
         )
         def test_project_guest(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_guest,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project_guest,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_guest.user)
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
@@ -108,13 +107,13 @@ class TestTaskListCreateAPIView:
             [("get", status.HTTP_200_OK), ("post", status.HTTP_403_FORBIDDEN)],
         )
         def test_project_user(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_user,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project_user,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_user.user)
             response = getattr(api_client, method)(list_url, HTTP_HOST=http_host)
@@ -122,18 +121,21 @@ class TestTaskListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
+            [
+                ("get", status.HTTP_200_OK),
+                ("post", status.HTTP_201_CREATED),
+            ],
         )
         def test_project_responsible(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_responsible,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_responsible.user)
+            api_client.force_authenticate(user=project.responsible)
             data = {"name": "test task"}
             response = getattr(api_client, method)(
                 list_url, data=data, HTTP_HOST=http_host
@@ -142,18 +144,21 @@ class TestTaskListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
+            [
+                ("get", status.HTTP_200_OK),
+                ("post", status.HTTP_201_CREATED),
+            ],
         )
         def test_project_supervisor(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_supervisor,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_supervisor.user)
+            api_client.force_authenticate(user=project.supervisor)
 
             data = {"name": "test task"}
             response = getattr(api_client, method)(
@@ -163,18 +168,21 @@ class TestTaskListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
+            [
+                ("get", status.HTTP_200_OK),
+                ("post", status.HTTP_201_CREATED),
+            ],
         )
         def test_project_owner(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                project_owner,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            project,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_owner.user)
+            api_client.force_authenticate(user=project.owner)
             data = {"name": "test task"}
             response = getattr(api_client, method)(
                 list_url, data=data, HTTP_HOST=http_host
@@ -186,15 +194,15 @@ class TestTaskListCreateAPIView:
             [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
         )
         def test_tenant_owner(
-                self,
-                api_client,
-                list_url,
-                http_host,
-                tenant_owner,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            list_url,
+            http_host,
+            tenant,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=tenant_owner.user)
+            api_client.force_authenticate(user=tenant.owner)
             data = {"name": "test task"}
             response = getattr(api_client, method)(
                 list_url, data=data, HTTP_HOST=http_host
@@ -206,7 +214,7 @@ class TestTaskListCreateAPIView:
             [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
         )
         def test_admin(
-                self, admin_client, list_url, http_host, method, expected_status_code
+            self, admin_client, list_url, http_host, method, expected_status_code
         ):
             data = {"name": "test task"}
             response = getattr(admin_client, method)(
@@ -221,46 +229,46 @@ class TestTaskListCreateAPIView:
             return task_factory.create_batch(2, project=project)
 
         def test_staff_sees_all_tasks(
-                self, admin_client, list_url, project, tasks, http_host
+            self, admin_client, list_url, project, tasks, http_host
         ):
             response = admin_client.get(list_url, HTTP_HOST=http_host)
             assert response.status_code == status.HTTP_200_OK
             assert response.data["count"] == 2
 
         def test_tenant_owner_sees_all_tasks(
-                self, api_client, list_url, project, tasks, tenant_owner, http_host
+            self, api_client, list_url, tasks, tenant, http_host
         ):
-            api_client.force_authenticate(tenant_owner.user)
+            api_client.force_authenticate(tenant.owner)
             response = api_client.get(list_url, HTTP_HOST=http_host)
             assert response.status_code == status.HTTP_200_OK
             assert response.data["count"] == 2
 
         def test_project_owner_sees_all_tasks(
-                self, api_client, list_url, project, tasks, project_owner, http_host
+            self, api_client, list_url, project, tasks, http_host
         ):
-            api_client.force_authenticate(project_owner.user)
+            api_client.force_authenticate(project.owner)
             response = api_client.get(list_url, HTTP_HOST=http_host)
             assert response.status_code == status.HTTP_200_OK
             assert response.data["count"] == 2
 
         def test_project_supervisor_sees_all_tasks(
-                self, api_client, list_url, project, tasks, project_supervisor, http_host
+            self, api_client, list_url, project, tasks, http_host
         ):
-            api_client.force_authenticate(project_supervisor.user)
+            api_client.force_authenticate(project.supervisor)
             response = api_client.get(list_url, HTTP_HOST=http_host)
             assert response.status_code == status.HTTP_200_OK
             assert response.data["count"] == 2
 
         def test_project_responsible_sees_all_tasks(
-                self, api_client, list_url, project, tasks, project_responsible, http_host
+            self, api_client, list_url, project, tasks, http_host
         ):
-            api_client.force_authenticate(project_responsible.user)
+            api_client.force_authenticate(project.responsible)
             response = api_client.get(list_url, HTTP_HOST=http_host)
             assert response.status_code == status.HTTP_200_OK
             assert response.data["count"] == 2
 
         def test_project_user_sees_only_tasks_he_is_responsible_for(
-                self, api_client, list_url, project, task_factory, project_user, http_host
+            self, api_client, list_url, project, task_factory, project_user, http_host
         ):
             api_client.force_authenticate(project_user.user)
 
@@ -273,7 +281,7 @@ class TestTaskListCreateAPIView:
             assert {x["id"] for x in response.data["results"]} == {str(t1.pk)}
 
         def test_project_guest_sees_none_tasks(
-                self, api_client, list_url, project, task_factory, project_guest, http_host
+            self, api_client, list_url, project, task_factory, project_guest, http_host
         ):
             api_client.force_authenticate(project_guest.user)
             task_factory.create_batch(2, project=project)
@@ -282,7 +290,7 @@ class TestTaskListCreateAPIView:
             assert response.data["count"] == 0
 
         def test_project_reader_sees_none_tasks(
-                self, api_client, list_url, project, task_factory, project_reader, http_host
+            self, api_client, list_url, project, task_factory, project_reader, http_host
         ):
             api_client.force_authenticate(project_reader.user)
             task_factory.create_batch(2, project=project)
@@ -291,7 +299,7 @@ class TestTaskListCreateAPIView:
             assert response.data["count"] == 0
 
     def test_pagination_works(
-            self, admin_client, list_url, project, task_factory, http_host
+        self, admin_client, list_url, project, task_factory, http_host
     ):
         task_factory.create_batch(5, project=project)
         response = admin_client.get(list_url, {"page_size": 3}, HTTP_HOST=http_host)
@@ -299,7 +307,7 @@ class TestTaskListCreateAPIView:
         assert len(response.data["results"]) == 3
 
     def test_perform_create(
-            self, admin_client, list_url, admin_user, project, http_host
+        self, admin_client, list_url, admin_user, project, http_host
     ):
         data = {"name": "my task"}
         response = admin_client.post(list_url, data=data, HTTP_HOST=http_host)
@@ -311,14 +319,7 @@ class TestTaskListCreateAPIView:
         assert task.updated_by == admin_user
 
     def test_filtering_works(
-            self,
-            admin_client,
-            list_url,
-            project,
-            task_factory,
-            john,
-            alice,
-            http_host
+        self, admin_client, list_url, project, task_factory, john, alice, http_host
     ):
         john_task = task_factory(project=project, created_by=john)
         alice_task = task_factory(project=project, created_by=alice)
@@ -327,7 +328,7 @@ class TestTaskListCreateAPIView:
         assert {t["id"] for t in response.data["results"]} == {str(john_task.pk)}
 
     def test_search_works(
-            self, admin_client, list_url, project, task_factory, http_host
+        self, admin_client, list_url, project, task_factory, http_host
     ):
         abc_task = task_factory(name="abc", project=project)
         qwe_task = task_factory(name="qwe", project=project)
@@ -337,7 +338,7 @@ class TestTaskListCreateAPIView:
         assert {t["id"] for t in response.data["results"]} == {str(abc_task.pk)}
 
     def test_ordering_works(
-            self, admin_client, list_url, project, task_factory, http_host
+        self, admin_client, list_url, project, task_factory, http_host
     ):
         a_task = task_factory(name="a", project=project)
         z_task = task_factory(name="z", project=project)
@@ -363,7 +364,7 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_anonymous(
-                self, api_client, detail_url, http_host, method, expected_status_code
+            self, api_client, detail_url, http_host, method, expected_status_code
         ):
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
@@ -378,7 +379,7 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_not_tenant_member(
-                self, api_client, detail_url, http_host, user, method, expected_status_code
+            self, api_client, detail_url, http_host, user, method, expected_status_code
         ):
             api_client.force_authenticate(user=user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -394,13 +395,13 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_tenant_user_not_project_member(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                tenant_user,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            tenant_user,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=tenant_user.user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -416,13 +417,13 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_project_reader(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_reader,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project_reader,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_reader.user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -438,13 +439,13 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_project_guest(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_guest,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project_guest,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_guest.user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -460,13 +461,13 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_project_user(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_user,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project_user,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=project_user.user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -482,7 +483,7 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_task_responsible(
-                self, api_client, detail_url, http_host, task, method, expected_status_code
+            self, api_client, detail_url, http_host, task, method, expected_status_code
         ):
             api_client.force_authenticate(user=task.responsible)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
@@ -498,15 +499,15 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_project_responsible(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_responsible,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_responsible.user)
+            api_client.force_authenticate(user=project.responsible)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -520,15 +521,15 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_project_supervisor(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_supervisor,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_supervisor.user)
+            api_client.force_authenticate(user=project.supervisor)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -542,15 +543,15 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_project_owner(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                project_owner,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            project,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=project_owner.user)
+            api_client.force_authenticate(user=project.owner)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -564,15 +565,15 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_tenant_owner(
-                self,
-                api_client,
-                detail_url,
-                http_host,
-                tenant_owner,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            http_host,
+            tenant,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=tenant_owner.user)
+            api_client.force_authenticate(user=tenant.owner)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -586,18 +587,18 @@ class TestTaskRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_admin(
-                self,
-                admin_client,
-                detail_url,
-                http_host,
-                method,
-                expected_status_code,
+            self,
+            admin_client,
+            detail_url,
+            http_host,
+            method,
+            expected_status_code,
         ):
             response = getattr(admin_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
     def test_perform_update(
-            self, admin_client, detail_url, task, admin_user, http_host
+        self, admin_client, detail_url, task, admin_user, http_host
     ):
         response = admin_client.patch(detail_url, HTTP_HOST=http_host)
         assert response.status_code == status.HTTP_200_OK
@@ -605,7 +606,7 @@ class TestTaskRetrieveUpdateDestroyAPIView:
         assert task.updated_by == admin_user
 
     def test_uses_task_responsible_update_serializer_if_user_is_task_responsible(
-            self, api_client, detail_url, task, user, http_host
+        self, api_client, detail_url, task, user, http_host
     ):
         api_client.force_authenticate(user=task.responsible)
 
