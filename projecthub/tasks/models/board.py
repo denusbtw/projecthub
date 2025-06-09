@@ -1,37 +1,48 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from projecthub.core.models import UUIDModel, TimestampedModel, Tenant
+from projecthub.core.models import UUIDModel, TimestampedModel
+from projecthub.projects.models import Project
 
 
 class BoardQuerySet(models.QuerySet):
 
-    def for_tenant(self, tenant):
-        return self.filter(tenant=tenant)
+    def default_boards(self):
+        return self.exclude(code=Board.Type.CUSTOM)
+
+    def custom_boards(self):
+        return self.filter(code=Board.Type.CUSTOM)
+
+    def for_project(self, project):
+        return self.filter(project=project)
+
+
+BOARD_TYPE_TODO = "todo"
+BOARD_TYPE_IN_PROGRESS = "in_progress"
+BOARD_TYPE_IN_REVIEW = "in_review"
+BOARD_TYPE_DONE = "done"
+BOARD_TYPE_CUSTOM = "custom"
 
 
 class Board(UUIDModel, TimestampedModel):
-    TODO = "todo"
-    IN_PROGRESS = "in_progress"
-    IN_REVIEW = "in_review"
-    DONE = "done"
+    class Type(models.TextChoices):
+        TODO = BOARD_TYPE_TODO, _("To Do")
+        IN_PROGRESS = BOARD_TYPE_IN_PROGRESS, _("In Progress")
+        IN_REVIEW = BOARD_TYPE_IN_REVIEW, _("In Review")
+        DONE = BOARD_TYPE_DONE, _("Done")
+        CUSTOM = BOARD_TYPE_CUSTOM, _("Custom")
 
-    tenant = models.ForeignKey(
-        Tenant,
+    project = models.ForeignKey(
+        Project,
         on_delete=models.CASCADE,
         related_name="boards",
-        help_text=_("Tenant that owns this board."),
+        help_text=_("Project that owns this board."),
     )
     name = models.CharField(max_length=255, help_text=_("Name of board."))
-    code = models.CharField(max_length=50, unique=False, blank=True, default="")
+    type = models.CharField(max_length=50, choices=Type.choices, unique=False)
     order = models.PositiveIntegerField(help_text=_("Order of board."))
-    is_default = models.BooleanField(
-        default=False,
-        help_text=_(
-            "Determines whether board is default (todo, done, in review, etc)."
-        ),
-    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -55,28 +66,52 @@ class Board(UUIDModel, TimestampedModel):
         ordering = ["order"]
         constraints = [
             models.UniqueConstraint(
-                fields=["tenant", "order"], name="unique_border_order_for_tenant"
+                fields=["project", "order"], name="unique_border_order_for_project"
             ),
             models.UniqueConstraint(
-                fields=["tenant", "code"], name="unique_border_code_code_for_tenant"
+                fields=["project", "type"],
+                name="unique_border_type_for_project",
+                condition=models.Q(
+                    type__in=[
+                        BOARD_TYPE_TODO,
+                        BOARD_TYPE_IN_PROGRESS,
+                        BOARD_TYPE_IN_REVIEW,
+                        BOARD_TYPE_DONE,
+                    ]
+                ),
             ),
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.order}) in {self.tenant.name}"
+        return f"{self.name} ({self.order}) in {self.project.name}"
+
+    def clean(self):
+        if self.type != self.Type.CUSTOM:
+            if (
+                Board.objects.filter(project=self.project, type=self.type)
+                .exclude(pk=self.pk)
+                .exists()
+            ):
+                raise ValidationError(
+                    f"Project already has a {self.get_type_display()} board."
+                )
+
+    @property
+    def is_custom(self):
+        return self.type == self.Type.CUSTOM
 
     @property
     def is_todo(self):
-        return self.code == "todo"
+        return self.type == self.Type.TODO
 
     @property
     def is_in_progress(self):
-        return self.code == "in_progress"
+        return self.type == self.Type.IN_PROGRESS
 
     @property
     def is_in_review(self):
-        return self.code == "in_review"
+        return self.type == self.Type.IN_REVIEW
 
     @property
     def is_done(self):
-        return self.code == "done"
+        return self.type == self.Type.DONE
