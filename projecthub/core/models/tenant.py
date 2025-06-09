@@ -22,6 +22,13 @@ class TenantQuerySet(models.QuerySet):
 
 
 class Tenant(UUIDModel, TimestampedModel):
+    # PROTECT захищає від видалення користувача, якщо він є owner хоча б одного Tenant
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="owned_tenants",
+        help_text=_("Owner of tenant")
+    )
     name = models.CharField(max_length=255, help_text=_("Name of tenant."))
     sub_domain = models.CharField(
         max_length=255, unique=True, help_text=_("Subdomain of tenant.")
@@ -76,12 +83,9 @@ class Tenant(UUIDModel, TimestampedModel):
             self.updated_by = updated_by
             self.save(update_fields=["is_active", "updated_by"])
 
+    #TODO: refactor
     def has_role(self, role: str, user=None):
         qs = self.members.filter(role=role)
         if user:
             qs = qs.filter(user=user)
         return qs.exists()
-
-    def get_owner(self):
-        return self.members.get(role=TenantMembership.Role.OWNER)
-    

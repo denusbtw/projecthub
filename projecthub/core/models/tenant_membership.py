@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -14,7 +13,6 @@ class TenantMembershipQuerySet(models.QuerySet):
 
 class TenantMembership(UUIDModel, TimestampedModel):
     class Role(models.TextChoices):
-        OWNER = ("owner", _("Owner"))
         USER = ("user", _("User"))
 
     tenant = models.ForeignKey(
@@ -66,18 +64,6 @@ class TenantMembership(UUIDModel, TimestampedModel):
     def __str__(self):
         role = self.get_role_display()
         return f"{self.user.username} ({role}) in {self.tenant.name}"
-
-    def clean(self):
-        if self.role == self.Role.OWNER:
-            existing_owner = TenantMembership.objects.filter(
-                tenant=self.tenant, role=self.Role.OWNER
-            ).exclude(pk=self.pk)
-            if existing_owner.exists():
-                raise ValidationError("Each tenant can have only one owner.")
-
-    @property
-    def is_owner(self):
-        return self.role == self.Role.OWNER
 
     @property
     def is_user(self):
