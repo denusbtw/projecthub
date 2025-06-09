@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -18,15 +17,9 @@ class ProjectMembershipQuerySet(models.QuerySet):
 
 class ProjectMembership(UUIDModel, TimestampedModel):
     class Role(models.TextChoices):
-        OWNER = ("owner", _("Owner"))
-        SUPERVISOR = ("supervisor", _("Supervisor"))
-        RESPONSIBLE = ("responsible", _("Responsible"))
         USER = ("user", _("User"))
         GUEST = ("guest", _("Guest"))
         READER = ("reader", _("Reader"))
-
-    SINGLE_USER_ROLES = {Role.OWNER, Role.SUPERVISOR, Role.RESPONSIBLE}
-    STAFF_USER_ROLES = {Role.OWNER, Role.SUPERVISOR, Role.RESPONSIBLE}
 
     project = models.ForeignKey(
         "Project",
@@ -78,18 +71,7 @@ class ProjectMembership(UUIDModel, TimestampedModel):
         role = self.get_role_display()
         return f"{self.user.username} ({role}) in {self.project.name}"
 
-    def clean(self):
-        # TODO: винести у функцію-валідатор
-        if self.role in self.SINGLE_USER_ROLES:
-            qs = ProjectMembership.objects.filter(
-                project_id=self.project_id, role=self.role
-            )
-            qs = qs.exclude(pk=self.pk)
-            if qs.exists():
-                raise ValidationError(
-                    {"role": "Project already has a user with role '{value}'."}
-                )
-
+    #TODO: refactor all `is_*`
     @property
     def is_owner(self):
         return self.role == self.Role.OWNER

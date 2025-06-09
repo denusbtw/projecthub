@@ -45,6 +45,30 @@ class Project(UUIDModel, TimestampedModel):
         related_name="projects",
         help_text=_("Tenant that owns this project."),
     )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="owned_projects",
+        help_text=_("Owner of project")
+    )
+    supervisor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="supervised_projects",
+        help_text=_("Supervisor of project")
+    )
+    responsible = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="responsible_projects",
+        help_text=_("Responsible of project")
+    )
     name = models.CharField(max_length=255, help_text=_("Name of project."))
     status = models.CharField(
         max_length=15,
@@ -170,6 +194,7 @@ class Project(UUIDModel, TimestampedModel):
             return self.end_date - self.start_date
         return None
 
+    #TODO: refactor
     def has_role(self, role: str, user=None):
         # if user is not provided, then checks whether project has user with such role
         # if user is provided, checks whether user has such role in project
@@ -178,15 +203,13 @@ class Project(UUIDModel, TimestampedModel):
             qs = qs.filter(user=user)
         return qs.exists()
 
-    def get_owner(self):
-        return self.members.get(role=ProjectMembership.Role.OWNER)
-
-    def get_supervisor(self):
-        return self.members.get(role=ProjectMembership.Role.SUPERVISOR)
-
-    def get_responsible(self):
-        return self.members.get(role=ProjectMembership.Role.RESPONSIBLE)
-
     def get_role_of(self, user):
+        if self.owner_id == user.id:
+            return "owner"
+        elif self.supervisor_id == user.id:
+            return "supervisor"
+        elif self.responsible_id == user.id:
+            return "responsible"
+
         membership = self.members.filter(user=user).first()
         return membership.role if membership else None
