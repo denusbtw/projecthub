@@ -18,13 +18,10 @@ class TestTenantFilterSet:
         assert filtered.first().pk == john_tenant.pk
 
     def test_by_owner_username(
-            self, tenant_factory, tenant_membership_factory, john, alice
+        self, tenant_factory, tenant_membership_factory, john, alice
     ):
-        john_tenant = tenant_factory()
-        alice_tenant = tenant_factory()
-        tenant_membership_factory(
-            tenant=john_tenant, user=john, role=TenantMembership.Role.OWNER
-        )
+        john_tenant = tenant_factory(owner=john)
+        alice_tenant = tenant_factory(owner=alice)
 
         queryset = Tenant.objects.all()
         filtered = TenantFilterSet({"owner": "jo"}, queryset=queryset).qs
@@ -33,7 +30,7 @@ class TestTenantFilterSet:
         assert filtered.first().pk == john_tenant.pk
 
     def test_by_user_username(
-            self, tenant_factory, tenant_membership_factory, john, alice
+        self, tenant_factory, tenant_membership_factory, john, alice
     ):
         john_tenant = tenant_factory()
         alice_tenant = tenant_factory()
@@ -52,15 +49,14 @@ class TestTenantFilterSet:
 class TestTenantMembershipFilterSet:
 
     def test_filter_by_role(self, tenant_membership_factory):
-        owner_membership = tenant_membership_factory(role=TenantMembership.Role.OWNER)
         user_membership = tenant_membership_factory(role=TenantMembership.Role.USER)
 
         queryset = TenantMembership.objects.all()
-        data = {"role": [TenantMembership.Role.OWNER]}
+        data = {"role": [TenantMembership.Role.USER]}
         filtered = TenantMembershipFilterSet(data, queryset=queryset).qs
 
         assert filtered.count() == 1
-        assert filtered.first().pk == owner_membership.pk
+        assert filtered.first().pk == user_membership.pk
 
     def test_filter_by_creator_username(self, tenant_membership_factory, john, alice):
         john_membership = tenant_membership_factory(created_by=john)

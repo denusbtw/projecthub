@@ -7,15 +7,12 @@ class TenantFilterSet(filters.FilterSet):
     creator = filters.CharFilter(
         field_name="created_by__username", lookup_expr="icontains"
     )
-    owner = filters.CharFilter(method="filter_by_owner")
+    owner = filters.CharFilter(field_name="owner__username", lookup_expr="icontains")
     user = filters.CharFilter(method="filter_by_user")
 
     class Meta:
         model = Tenant
         fields = ("is_active", "creator", "owner", "user")
-
-    def filter_by_owner(self, queryset, name, value):
-        return self._filter_by_role(queryset, value, TenantMembership.Role.OWNER)
 
     def filter_by_user(self, queryset, name, value):
         return self._filter_by_role(queryset, value, TenantMembership.Role.USER)

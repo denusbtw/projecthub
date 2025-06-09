@@ -2,8 +2,10 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
-from projecthub.attachments.tests.factories import CommentAttachmentFactory, \
-    TaskAttachmentFactory
+from projecthub.attachments.tests.factories import (
+    CommentAttachmentFactory,
+    TaskAttachmentFactory,
+)
 from projecthub.comments.tests.factories import CommentFactory
 from projecthub.core.models import TenantMembership
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
@@ -55,11 +57,6 @@ def tenant_user(db, tenant, tenant_membership_factory):
 
 
 @pytest.fixture
-def tenant_owner(db, tenant, tenant_membership_factory):
-    return tenant_membership_factory(tenant=tenant, role=TenantMembership.Role.OWNER)
-
-
-@pytest.fixture
 def project_factory():
     return ProjectFactory
 
@@ -77,25 +74,6 @@ def project_membership_factory():
 @pytest.fixture
 def project_membership(db, project):
     return ProjectMembershipFactory(project=project, role=ProjectMembership.Role.USER)
-
-
-@pytest.fixture
-def project_owner(db, project):
-    return ProjectMembershipFactory(project=project, role=ProjectMembership.Role.OWNER)
-
-
-@pytest.fixture
-def project_supervisor(db, project):
-    return ProjectMembershipFactory(
-        project=project, role=ProjectMembership.Role.SUPERVISOR
-    )
-
-
-@pytest.fixture
-def project_responsible(db, project):
-    return ProjectMembershipFactory(
-        project=project, role=ProjectMembership.Role.RESPONSIBLE
-    )
 
 
 @pytest.fixture
@@ -129,23 +107,30 @@ def board_factory():
 
 
 @pytest.fixture
-def todo_board(db, tenant):
-    return BoardFactory(tenant=tenant, name="To Do", code=Board.TODO)
+def todo_board(db, project):
+    return BoardFactory(project=project, name="To Do", type=Board.Type.TODO)
 
 
 @pytest.fixture
-def in_progress_board(db, tenant):
-    return BoardFactory(tenant=tenant, name="In progress", code=Board.IN_PROGRESS)
+def in_progress_board(db, project):
+    return BoardFactory(
+        project=project, name="In progress", type=Board.Type.IN_PROGRESS
+    )
 
 
 @pytest.fixture
-def in_review_board(db, tenant):
-    return BoardFactory(tenant=tenant, name="In review", code=Board.IN_REVIEW)
+def in_review_board(db, project):
+    return BoardFactory(project=project, name="In review", type=Board.Type.IN_REVIEW)
 
 
 @pytest.fixture
-def done_board(db, tenant):
-    return BoardFactory(tenant=tenant, name="Done", code=Board.DONE)
+def done_board(db, project):
+    return BoardFactory(project=project, name="Done", type=Board.Type.DONE)
+
+
+@pytest.fixture
+def custom_board(db, project):
+    return BoardFactory(project=project, type=Board.Type.CUSTOM)
 
 
 @pytest.fixture
@@ -196,12 +181,15 @@ def task_attachment(task):
 @pytest.fixture
 def file():
     return SimpleUploadedFile(
-        name="test.txt",
-        content=b"file content here",
-        content_type="text/plain"
+        name="test.txt", content=b"file content here", content_type="text/plain"
     )
 
 
 @pytest.fixture(autouse=True)
 def _media_storage(settings, tmpdir) -> None:
     settings.MEDIA_ROOT = tmpdir.strpath
+
+
+@pytest.fixture(autouse=True)
+def superuser():
+    return UserFactory(is_superuser=True)

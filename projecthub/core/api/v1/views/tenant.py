@@ -16,14 +16,15 @@ from ..serializers import (
 class TenantListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TenantPagination
     permission_classes = [permissions.IsAuthenticated]
+    # TODO: move into TenantFilterMixin
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
-        filters.OrderingFilter
+        filters.OrderingFilter,
     ]
     filterset_class = TenantFilterSet
-    search_fields = ["name", "sub_domain"]
-    ordering_fields = ["created_at", "name", "sub_domain", "is_active"]
+    search_fields = ("name", "sub_domain")
+    ordering_fields = ("created_at", "name", "sub_domain", "is_active")
 
     def get_queryset(self):
         qs = Tenant.objects.visible_to(self.request.user)
@@ -36,13 +37,17 @@ class TenantListCreateAPIView(generics.ListCreateAPIView):
         return TenantListSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+        serializer.save(
+            owner=self.request.user,
+            created_by=self.request.user,
+            updated_by=self.request.user,
+        )
 
 
 class TenantRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [
         permissions.IsAuthenticated,
-        permissions.IsAdminUser | IsTenantOwnerForCore | ReadOnlyPermission
+        permissions.IsAdminUser | IsTenantOwnerForCore | ReadOnlyPermission,
     ]
 
     def get_queryset(self):

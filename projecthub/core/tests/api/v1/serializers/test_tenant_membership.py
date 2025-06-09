@@ -12,7 +12,7 @@ from projecthub.core.models import TenantMembership
 class TestTenantListSerializer:
 
     def test_role_is_correct(self, tenant_membership_factory):
-        membership = tenant_membership_factory(role=TenantMembership.Role.OWNER)
+        membership = tenant_membership_factory(role=TenantMembership.Role.USER)
         serializer = TenantMembershipListSerializer(membership)
         assert serializer.data["role"] == membership.get_role_display()
 
@@ -21,7 +21,7 @@ class TestTenantListSerializer:
 class TestTenantDetailSerializer:
 
     def test_role_is_correct(self, tenant_membership_factory):
-        membership = tenant_membership_factory(role=TenantMembership.Role.OWNER)
+        membership = tenant_membership_factory(role=TenantMembership.Role.USER)
         serializer = TenantMembershipDetailSerializer(membership)
         assert serializer.data["role"] == membership.get_role_display()
 

@@ -1,12 +1,12 @@
 import pytest
+from rest_framework.exceptions import ValidationError
 
 from projecthub.core.api.v1.serializers import (
     TenantCreateSerializer,
-    TenantListSerializer,
     TenantUpdateSerializer,
     TenantDetailSerializer,
 )
-from projecthub.core.models import TenantMembership
+from projecthub.core.models import Tenant
 
 
 @pytest.fixture
@@ -17,38 +17,31 @@ def data():
 @pytest.mark.django_db
 class TestTenantDetailSerializer:
 
-    def test_owner_is_nested_serializer(self, tenant, tenant_membership_factory):
-        owner_membership = tenant_membership_factory(
-            tenant=tenant, role=TenantMembership.Role.OWNER
-        )
+    def test_owner_is_nested_serializer(self, tenant):
         tenant.role = ""
         serializer = TenantDetailSerializer(tenant)
-        assert serializer.data["owner"]["id"] == str(owner_membership.id)
-
-    def test_owner_is_none_if_tenant_does_not_have_owner(self, tenant):
-        tenant.role = ""
-        serializer = TenantDetailSerializer(tenant)
-        assert serializer.data["owner"] is None
+        assert serializer.data["owner"]["id"] == str(tenant.owner_id)
 
 
 @pytest.mark.django_db
 class TestTenantCreateSerializer:
 
-    def test_to_representation_matches_list_serializer_representation(self, user, data):
+    def test_error_if_empty_data(self):
+        serializer = TenantCreateSerializer(data={})
+        with pytest.raises(ValidationError):
+            serializer.is_valid(raise_exception=True)
+
+    def test_creates_tenant(self, user):
+        data = {"name": "test tenant", "sub_domain": "test-tenant"}
         serializer = TenantCreateSerializer(data=data)
         assert serializer.is_valid(), serializer.errors
-        tenant = serializer.save()
-        assert serializer.data == TenantListSerializer(tenant).data
+        serializer.save(owner=user)
 
-    def test_to_representation_annotates_owner_role(self, user, data, rf):
-        request = rf.get("/")
-        request.user = user
-
-        context = {"request": request}
-        serializer = TenantCreateSerializer(data=data, context=context)
-        assert serializer.is_valid(), serializer.errors
-        serializer.save()
-        assert serializer.data["role"] == TenantMembership.Role.OWNER
+        tenant_id = serializer.data["id"]
+        tenant = Tenant.objects.get(pk=tenant_id)
+        assert tenant.name == data["name"]
+        assert tenant.sub_domain == data["sub_domain"]
+        assert tenant.owner == user
 
 
 @pytest.mark.django_db

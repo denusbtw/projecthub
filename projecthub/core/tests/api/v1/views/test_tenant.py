@@ -25,20 +25,22 @@ class TestTenantListCreateAPIView:
 
     class TestPermissions:
 
-        @pytest.mark.parametrize("method, expected_status_code", [
-            ("get", status.HTTP_403_FORBIDDEN),
-            ("post", status.HTTP_403_FORBIDDEN)
-        ])
-        def test_anonymous_user(self, api_client, list_url, method, expected_status_code):
+        @pytest.mark.parametrize(
+            "method, expected_status_code",
+            [("get", status.HTTP_403_FORBIDDEN), ("post", status.HTTP_403_FORBIDDEN)],
+        )
+        def test_anonymous_user(
+            self, api_client, list_url, method, expected_status_code
+        ):
             response = getattr(api_client, method)(list_url)
             assert response.status_code == expected_status_code
 
-        @pytest.mark.parametrize("method, expected_status_code", [
-            ("get", status.HTTP_200_OK),
-            ("post", status.HTTP_201_CREATED)
-        ])
+        @pytest.mark.parametrize(
+            "method, expected_status_code",
+            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
+        )
         def test_authenticated_user(
-                self, api_client, list_url, user, data, method, expected_status_code
+            self, api_client, list_url, user, data, method, expected_status_code
         ):
             api_client.force_authenticate(user=user)
             response = getattr(api_client, method)(list_url, data=data)
@@ -53,7 +55,7 @@ class TestTenantListCreateAPIView:
             assert response.data["count"] == 3
 
         def test_non_staff_sees_only_tenants_he_is_member_of(
-                self, api_client, list_url, tenant_factory, tenant_membership_factory, user
+            self, api_client, list_url, tenant_factory, tenant_membership_factory, user
         ):
             api_client.force_authenticate(user=user)
             t1 = tenant_factory()
@@ -66,7 +68,7 @@ class TestTenantListCreateAPIView:
             assert {t["id"] for t in response.data["results"]} == {str(t1.id)}
 
         def test_role_is_annotated_correctly(
-                self, api_client, list_url, tenant_membership_factory
+            self, api_client, list_url, tenant_membership_factory
         ):
             membership = tenant_membership_factory()
             api_client.force_authenticate(user=membership.user)
@@ -90,9 +92,7 @@ class TestTenantListCreateAPIView:
         assert tenant.created_by == admin_user
         assert tenant.updated_by == admin_user
 
-    def test_filtering_works(
-            self, admin_client, list_url, tenant_factory, john, alice
-    ):
+    def test_filtering_works(self, admin_client, list_url, tenant_factory, john, alice):
         john_tenant = tenant_factory(created_by=john)
         alice_tenant = tenant_factory(created_by=alice)
         response = admin_client.get(list_url, {"creator": "john"})
@@ -116,6 +116,7 @@ class TestTenantListCreateAPIView:
         expected_ids = [str(z_tenant.pk), str(a_tenant.pk)]
         assert [t["id"] for t in response.data["results"]] == expected_ids
 
+
 @pytest.mark.django_db
 class TestTenantRetrieveUpdateDestroyAPIView:
 
@@ -131,7 +132,7 @@ class TestTenantRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_anonymous_user(
-                self, api_client, detail_url, method, expected_status_code
+            self, api_client, detail_url, method, expected_status_code
         ):
             response = getattr(api_client, method)(detail_url)
             assert response.status_code == expected_status_code
@@ -146,7 +147,7 @@ class TestTenantRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_not_tenant_member(
-                self, api_client, detail_url, user, method, expected_status_code
+            self, api_client, detail_url, user, method, expected_status_code
         ):
             api_client.force_authenticate(user=user)
             response = getattr(api_client, method)(detail_url)
@@ -162,13 +163,13 @@ class TestTenantRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_tenant_user(
-                self,
-                api_client,
-                detail_url,
-                tenant_user,
-                tenant,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            tenant_user,
+            tenant,
+            method,
+            expected_status_code,
         ):
             api_client.force_authenticate(user=tenant_user.user)
             response = getattr(api_client, method)(detail_url)
@@ -184,15 +185,14 @@ class TestTenantRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_tenant_owner(
-                self,
-                api_client,
-                detail_url,
-                tenant_owner,
-                tenant,
-                method,
-                expected_status_code,
+            self,
+            api_client,
+            detail_url,
+            tenant,
+            method,
+            expected_status_code,
         ):
-            api_client.force_authenticate(user=tenant_owner.user)
+            api_client.force_authenticate(user=tenant.owner)
             response = getattr(api_client, method)(detail_url)
             assert response.status_code == expected_status_code
 
@@ -206,12 +206,12 @@ class TestTenantRetrieveUpdateDestroyAPIView:
             ],
         )
         def test_admin(
-                self,
-                admin_client,
-                detail_url,
-                tenant,
-                method,
-                expected_status_code,
+            self,
+            admin_client,
+            detail_url,
+            tenant,
+            method,
+            expected_status_code,
         ):
             response = getattr(admin_client, method)(detail_url)
             assert response.status_code == expected_status_code
@@ -219,7 +219,7 @@ class TestTenantRetrieveUpdateDestroyAPIView:
     class TestQueryset:
 
         def test_role_is_annotated_correctly(
-                self, api_client, tenant, detail_url, tenant_membership_factory
+            self, api_client, tenant, detail_url, tenant_membership_factory
         ):
             membership = tenant_membership_factory(tenant=tenant)
             api_client.force_authenticate(user=membership.user)
@@ -228,11 +228,11 @@ class TestTenantRetrieveUpdateDestroyAPIView:
             assert response.data["role"] == membership.role
 
         def test_owner_field_serialized_correctly(
-                self, admin_client, detail_url, tenant, tenant_owner
+            self, admin_client, detail_url, tenant
         ):
             response = admin_client.get(detail_url)
             assert response.status_code == status.HTTP_200_OK
-            assert response.data["owner"]["user"]["id"] == str(tenant_owner.user_id)
+            assert response.data["owner"]["id"] == str(tenant.owner_id)
 
     def test_perform_update(self, admin_client, detail_url, tenant, admin_user):
         response = admin_client.patch(detail_url)

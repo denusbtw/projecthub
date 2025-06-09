@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, Subquery, Q
 from django.utils.translation import gettext_lazy as _
 
 from .base import UUIDModel, TimestampedModel
@@ -18,7 +18,7 @@ class TenantQuerySet(models.QuerySet):
     def visible_to(self, user):
         if user.is_staff:
             return self
-        return self.filter(members__user=user)
+        return self.filter(Q(owner=user) | Q(members__user=user))
 
 
 class Tenant(UUIDModel, TimestampedModel):
@@ -27,9 +27,10 @@ class Tenant(UUIDModel, TimestampedModel):
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="owned_tenants",
-        help_text=_("Owner of tenant")
+        help_text=_("Owner of tenant"),
     )
     name = models.CharField(max_length=255, help_text=_("Name of tenant."))
+    # TODO: add validation, so only `-` allowed
     sub_domain = models.CharField(
         max_length=255, unique=True, help_text=_("Subdomain of tenant.")
     )
