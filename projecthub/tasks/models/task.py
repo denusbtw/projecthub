@@ -4,10 +4,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from rest_framework.generics import get_object_or_404
 
-from projecthub.core.models import UUIDModel, TimestampedModel, TenantMembership
+from projecthub.core.models import UUIDModel, TimestampedModel
 from projecthub.projects.models import ProjectMembership, Project
-from .board import Board
 
 
 class TaskQuerySet(models.QuerySet):
@@ -24,19 +24,18 @@ class TaskQuerySet(models.QuerySet):
         if user.is_staff:
             return self
 
-        tenant_membership = TenantMembership.objects.filter(
-            tenant=tenant, user=user
-        ).first()
-        if tenant_membership and tenant_membership.is_owner:
+        if user.id == tenant.owner_id:
+            return self
+
+        project = get_object_or_404(Project, pk=project_id)
+        if user.id in {project.owner_id, project.supervisor_id, project.responsible_id}:
             return self
 
         project_membership = ProjectMembership.objects.filter(
-            project_id=project_id, user=user
+            project=project, user=user, role=ProjectMembership.Role.USER
         ).first()
-        if project_membership and project_membership.is_staff:
-            return self
 
-        if project_membership and project_membership.is_user:
+        if project_membership:
             return self.for_responsible(user)
 
         return self.none()
@@ -101,7 +100,7 @@ class Task(UUIDModel, TimestampedModel):
         help_text=_("User who made the last change."),
     )
 
-    #TODO:
+    # TODO:
     # add search vector: `search_vector = SearchVectorField(null=True)`
     # create index for it `GinIndex(fields=["search_vector"]`
     # override save method: `self.search_vector = SearchVector("body")
@@ -132,7 +131,7 @@ class Task(UUIDModel, TimestampedModel):
         ]
 
     def __str__(self):
-        board_name = getattr(self.board, "name", "No status")
+        board_name = getattr(self.board, "name", "No board")
         return f"{self.name} ({board_name}) in {self.project.name}"
 
     @property
@@ -141,19 +140,12 @@ class Task(UUIDModel, TimestampedModel):
             return self.end_date - self.start_date
         return None
 
-    def set_board(self, code: str, updated_by):
+    def set_board(self, board, updated_by):
         if not updated_by:
             raise ValidationError("updated_by is required.")
 
-        #TODO: if code is None, it means that user wants to revoke from task
+        # TODO: if code is None, it means that user wants to revoke from task
         # so call self.revoke(updated_by)
-
-        board = Board.objects.filter(
-            tenant_id=self.project.tenant_id, code=code
-        ).first()
-
-        if not board:
-            raise ValidationError(f"No board with code '{code}' found for tenant.")
 
         now = timezone.now()
 

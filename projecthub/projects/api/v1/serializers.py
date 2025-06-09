@@ -51,6 +51,16 @@ class BaseProjectWriteSerializer(serializers.ModelSerializer):
 
 
 class ProjectCreateSerializer(BaseProjectWriteSerializer):
+    def create(self, validated_data):
+        DEFAULT_BOARDS = {
+            {"code": Type.TODO, "name": "To Do", "order": 1},
+            {"code": Type.IN_PROGRESS, "name": "In Progress", "order": 2},
+            {"code": Type.IN_REVIEW, "name": "In Review", "order": 3},
+            {"code": Type.DONE, "name": "Done", "order": 4},
+        }
+        #TODO: create default boards
+        pass
+
     def to_representation(self, instance):
         instance.role = ProjectMembership.Role.OWNER
         return ProjectListSerializer(instance, context=self.context).data

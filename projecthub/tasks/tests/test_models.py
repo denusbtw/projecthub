@@ -23,22 +23,16 @@ class TestTask:
         task = task_factory(start_date=start_date, end_date=end_date)
         assert task.duration.days == 4
 
-    def test_set_status_error_if_without_updated_by(self, task):
+    def test_set_board_error_if_without_updated_by(self, task, todo_board):
         with pytest.raises(ValidationError, match="updated_by is required."):
-            task.set_board(code="todo", updated_by=None)
+            task.set_board(board=todo_board, updated_by=None)
 
-    def test_set_status_error_if_status_does_not_exist(self, task, user):
-        with pytest.raises(ValidationError, match="No board with code"):
-            task.set_board(code="invalid", updated_by=user)
-
-    def test_set_status_sets_close_date_if_status_is_done(
-        self, done_board, task, user
-    ):
-        task.set_board(code=done_board.code, updated_by=user)
+    def test_set_board_sets_close_date_if_board_is_done(self, done_board, task, user):
+        task.set_board(board=done_board, updated_by=user)
         assert task.close_date is not None
 
-    def test_set_status_sets_status_and_updated_by(self, done_board, task, user):
-        task.set_board(code=done_board.code, updated_by=user)
+    def test_set_board_sets_board_and_updated_by(self, done_board, task, user):
+        task.set_board(board=done_board, updated_by=user)
         assert task.board == done_board
         assert task.updated_by == user
 
@@ -71,7 +65,7 @@ class TestTask:
         assert task.is_done
 
     def test_revoke_should_remove_responsible_and_status(
-            self, todo_board, user, task_factory
+        self, todo_board, user, task_factory
     ):
         task = task_factory(board=todo_board, responsible=user)
         task.revoke(updated_by=user)
@@ -88,18 +82,42 @@ class TestTask:
 class TestBoard:
 
     def test_error_if_board_with_such_order_exists_in_tenant(
-        self, tenant, board_factory
+        self, project, board_factory
     ):
-        board_factory(tenant=tenant, order=10)
+        board_factory(project=project, order=10)
         with pytest.raises(IntegrityError):
-            board_factory(tenant=tenant, order=10)
+            board_factory(project=project, order=10)
 
-    def test_error_if_board_with_such_code_exists_in_tenant(
-        self, tenant, board_factory
-    ):
-        board_factory(tenant=tenant, code="todo")
+    def test_only_one_todo_board_can_exist_for_project(self, project, board_factory):
+        board_factory(project=project, type=Board.Type.TODO)
         with pytest.raises(IntegrityError):
-            board_factory(tenant=tenant, code="todo")
+            board_factory(project=project, type=Board.Type.TODO)
+
+    def test_only_one_in_progress_board_can_exist_for_project(
+        self, project, board_factory
+    ):
+        board_factory(project=project, type=Board.Type.IN_PROGRESS)
+        with pytest.raises(IntegrityError) as exc:
+            board_factory(project=project, type=Board.Type.IN_PROGRESS)
+        assert "unique constraint" in str(exc.value)
+
+    def test_only_one_in_review_board_can_exist_for_project(
+        self, project, board_factory
+    ):
+        board_factory(project=project, type=Board.Type.IN_REVIEW)
+        with pytest.raises(IntegrityError) as exc:
+            board_factory(project=project, type=Board.Type.IN_REVIEW)
+        assert "unique constraint" in str(exc.value)
+
+    def test_only_one_done_board_can_exist_for_project(self, project, board_factory):
+        board_factory(project=project, type=Board.Type.DONE)
+        with pytest.raises(IntegrityError) as exc:
+            board_factory(project=project, type=Board.Type.DONE)
+        assert "unique constraint" in str(exc.value)
+
+    def test_many_custom_boards_can_exist_for_project(self, project, board_factory):
+        board_factory(project=project, type=Board.Type.CUSTOM)
+        board_factory(project=project, type=Board.Type.CUSTOM)
 
     def test_is_todo_property(self, todo_board):
         assert todo_board.is_todo
@@ -155,54 +173,53 @@ class TestTaskQuerySet:
         assert set(qs.values_list("pk", flat=True)) == {task1.pk}
 
     def test_visible_to_returns_all_tasks_if_admin(
-            self, admin_user, project, tenant, task_factory
+        self, admin_user, project, tenant, task_factory
     ):
         task_factory.create_batch(3, project=project)
         qs = Task.objects.visible_to(admin_user, project.pk, tenant)
         assert qs.count() == 3
 
-    def test_visible_to_returns_all_tasks_if_tenant_owner(
-            self, tenant_owner, project, tenant, task_factory
-    ):
+    def test_visible_to_returns_all_tasks_if_project_owner(self, project, task_factory):
         task_factory.create_batch(3, project=project)
         qs = Task.objects.visible_to(
-            user=tenant_owner.user,
-            tenant=tenant,
-            project_id=project.pk
+            user=project.owner, tenant=project.tenant, project_id=project.pk
         )
         assert qs.count() == 3
 
-    def test_visible_to_returns_all_tasks_if_project_owner(
-            self, project_owner, project, tenant, task_factory
+    def test_visible_to_returns_all_tasks_if_project_supervisor(
+        self, project, task_factory
     ):
         task_factory.create_batch(3, project=project)
         qs = Task.objects.visible_to(
-            user=project_owner.user,
-            tenant=tenant,
-            project_id=project.pk
+            user=project.supervisor, tenant=project.tenant, project_id=project.pk
+        )
+        assert qs.count() == 3
+
+    def test_visible_to_returns_all_tasks_if_project_responsible(
+        self, project, task_factory
+    ):
+        task_factory.create_batch(3, project=project)
+        qs = Task.objects.visible_to(
+            user=project.responsible, tenant=project.tenant, project_id=project.pk
         )
         assert qs.count() == 3
 
     def test_visible_to_returns_only_tasks_user_is_responsible_for_if_project_user(
-            self, user, project_user, project, tenant, task_factory
+        self, user, project_user, project, task_factory
     ):
         task1 = task_factory(project=project, responsible=project_user.user)
         task2 = task_factory(project=project)
         qs = Task.objects.visible_to(
-            user=project_user.user,
-            tenant=tenant,
-            project_id=project.pk
+            user=project_user.user, tenant=project.tenant, project_id=project.pk
         )
         assert set(qs.values_list("pk", flat=True)) == {task1.pk}
 
-    def test_visible_to_returns_empty_qs(self, user, project, tenant, task_factory):
+    def test_visible_to_returns_empty_qs(self, user, project, task_factory):
         """Returns empty queryset if user is nor admin nor tenant owner
-         nor project owner nor project user"""
+        nor project owner nor project user"""
         task_factory(project=project)
         qs = Task.objects.visible_to(
-            user=user,
-            tenant=tenant,
-            project_id=project.pk
+            user=user, tenant=project.tenant, project_id=project.pk
         )
         assert not qs.exists()
 
@@ -210,10 +227,10 @@ class TestTaskQuerySet:
 @pytest.mark.django_db
 class TestBoardQuerySet:
 
-    def test_for_tenant(self, tenant_factory, board_factory):
-        tenant1 = tenant_factory()
-        tenant2 = tenant_factory()
-        board_in_tenant1 = board_factory(tenant=tenant1)
-        board_in_tenant2 = board_factory(tenant=tenant2)
-        qs = Board.objects.for_tenant(tenant1)
-        assert set(qs.values_list("pk", flat=True)) == {board_in_tenant1.pk}
+    def test_for_project(self, project_factory, board_factory):
+        project1 = project_factory()
+        project2 = project_factory()
+        board_in_project1 = board_factory(project=project1)
+        board_in_project2 = board_factory(project=project2)
+        qs = Board.objects.for_project(project1)
+        assert set(qs.values_list("pk", flat=True)) == {board_in_project1.pk}

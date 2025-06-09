@@ -1,8 +1,6 @@
 import factory
-from django.utils.text import slugify
 
 from projecthub.core.models import TenantMembership
-from projecthub.core.tests.factories import TenantFactory
 from projecthub.projects.models import ProjectMembership
 from projecthub.projects.tests.factories import ProjectFactory
 from projecthub.users.tests.factories import UserFactory
@@ -10,19 +8,15 @@ from ..models import Task, Board
 
 
 class BoardFactory(factory.django.DjangoModelFactory):
-    tenant = factory.SubFactory(TenantFactory)
+    project = factory.SubFactory(ProjectFactory)
     name = factory.Sequence(lambda n: f"name_{n}")
+    type = factory.Faker("random_element", elements=[c[0] for c in Board.Type.choices])
     order = factory.Sequence(lambda n: n + 1)
-    is_default = False
     created_by = factory.SubFactory(UserFactory)
     updated_by = factory.SubFactory(UserFactory)
 
     class Meta:
         model = Board
-
-    @factory.lazy_attribute
-    def code(self):
-        return slugify(self.name)
 
 
 class TaskFactory(factory.django.DjangoModelFactory):

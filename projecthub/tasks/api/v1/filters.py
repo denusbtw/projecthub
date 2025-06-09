@@ -22,9 +22,7 @@ class TaskFilterSet(filters.FilterSet):
     start_date_before = filters.IsoDateTimeFilter(
         field_name="start_date", lookup_expr="lte"
     )
-    end_date_after = filters.IsoDateTimeFilter(
-        field_name="end_date", lookup_expr="gte"
-    )
+    end_date_after = filters.IsoDateTimeFilter(field_name="end_date", lookup_expr="gte")
     end_date_before = filters.IsoDateTimeFilter(
         field_name="end_date", lookup_expr="lte"
     )
@@ -38,10 +36,16 @@ class TaskFilterSet(filters.FilterSet):
     class Meta:
         model = Task
         fields = (
-            "status", "priority", "responsible", "creator",
-            "start_date_after", "start_date_before",
-            "end_date_after", "end_date_before",
-            "close_date_after", "close_date_before"
+            "status",
+            "priority",
+            "responsible",
+            "creator",
+            "start_date_after",
+            "start_date_before",
+            "end_date_after",
+            "end_date_before",
+            "close_date_after",
+            "close_date_before",
         )
 
 
@@ -52,4 +56,4 @@ class BoardFilterSet(filters.FilterSet):
 
     class Meta:
         model = Board
-        fields = ("is_default", "creator")
+        fields = ("creator", "type")
