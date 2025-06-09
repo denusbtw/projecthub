@@ -7,6 +7,9 @@ from projecthub.users.tests.factories import UserFactory
 
 
 class ProjectFactory(factory.django.DjangoModelFactory):
+    owner = factory.SubFactory(UserFactory)
+    supervisor = factory.SubFactory(UserFactory)
+    responsible = factory.SubFactory(UserFactory)
     tenant = factory.SubFactory(TenantFactory)
     name = factory.Faker("word")
     status = factory.Faker(

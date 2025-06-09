@@ -1,9 +1,9 @@
 from datetime import datetime
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.utils import timezone
-from django.core.exceptions import ValidationError
 
 from projecthub.projects.models import Project, ProjectMembership
 
@@ -91,49 +91,6 @@ class TestProjectMembership:
         with pytest.raises(IntegrityError):
             project_membership_factory(project=project, user=user)
 
-    def test_error_if_owner_already_exists(
-        self, project, user, project_membership_factory
-    ):
-        project_membership_factory(project=project, role=ProjectMembership.Role.OWNER)
-
-        membership = ProjectMembership(
-            project=project, user=user, role=ProjectMembership.Role.OWNER
-        )
-        with pytest.raises(
-            ValidationError, match="Project already has a user with role"
-        ):
-            membership.full_clean()
-
-    def test_error_if_supervisor_already_exists(
-        self, project, user, project_membership_factory
-    ):
-        project_membership_factory(
-            project=project, role=ProjectMembership.Role.SUPERVISOR
-        )
-
-        membership = ProjectMembership(
-            project=project, user=user, role=ProjectMembership.Role.SUPERVISOR
-        )
-        with pytest.raises(
-            ValidationError, match="Project already has a user with role"
-        ):
-            membership.full_clean()
-
-    def test_error_if_responsible_already_exists(
-        self, project, user, project_membership_factory
-    ):
-        project_membership_factory(
-            project=project, role=ProjectMembership.Role.RESPONSIBLE
-        )
-
-        membership = ProjectMembership(
-            project=project, user=user, role=ProjectMembership.Role.RESPONSIBLE
-        )
-        with pytest.raises(
-            ValidationError, match="Project already has a user with role"
-        ):
-            membership.full_clean()
-
     def test_no_error_if_user_already_exists(
         self, project, user, project_membership_factory
     ):
@@ -161,56 +118,20 @@ class TestProjectMembership:
         )
         membership.full_clean()
 
-    def test_is_owner_property(self, project_membership_factory):
-        membership = project_membership_factory(role=ProjectMembership.Role.OWNER)
-        assert membership.is_owner
-        assert not membership.is_supervisor
-        assert not membership.is_responsible
-        assert not membership.is_user
-        assert not membership.is_guest
-        assert not membership.is_reader
-
-    def test_is_supervisor_property(self, project_membership_factory):
-        membership = project_membership_factory(role=ProjectMembership.Role.SUPERVISOR)
-        assert not membership.is_owner
-        assert membership.is_supervisor
-        assert not membership.is_responsible
-        assert not membership.is_user
-        assert not membership.is_guest
-        assert not membership.is_reader
-
-    def test_is_responsible_property(self, project_membership_factory):
-        membership = project_membership_factory(role=ProjectMembership.Role.RESPONSIBLE)
-        assert not membership.is_owner
-        assert not membership.is_supervisor
-        assert membership.is_responsible
-        assert not membership.is_user
-        assert not membership.is_guest
-        assert not membership.is_reader
-
     def test_is_user_property(self, project_membership_factory):
         membership = project_membership_factory(role=ProjectMembership.Role.USER)
-        assert not membership.is_owner
-        assert not membership.is_supervisor
-        assert not membership.is_responsible
         assert membership.is_user
         assert not membership.is_guest
         assert not membership.is_reader
 
     def test_is_guest_property(self, project_membership_factory):
         membership = project_membership_factory(role=ProjectMembership.Role.GUEST)
-        assert not membership.is_owner
-        assert not membership.is_supervisor
-        assert not membership.is_responsible
         assert not membership.is_user
         assert membership.is_guest
         assert not membership.is_reader
 
     def test_is_reader_property(self, project_membership_factory):
         membership = project_membership_factory(role=ProjectMembership.Role.READER)
-        assert not membership.is_owner
-        assert not membership.is_supervisor
-        assert not membership.is_responsible
         assert not membership.is_user
         assert not membership.is_guest
         assert membership.is_reader
@@ -252,10 +173,10 @@ class TestProjectQuerySet:
         assert qs.count() == 3
 
     def test_visible_to_returns_all_projects_under_tenant_if_tenant_owner(
-            self, tenant_owner, tenant, project_factory
+            self, tenant, project_factory
     ):
         project_factory.create_batch(3, tenant=tenant)
-        qs = Project.objects.visible_to(tenant_owner.user, tenant)
+        qs = Project.objects.visible_to(tenant.owner, tenant)
         assert qs.count() == 3
 
     def test_visible_to_returns_only_projects_user_is_member_of(

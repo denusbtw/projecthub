@@ -5,7 +5,7 @@ from django.db.models import OuterRef, Subquery
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from projecthub.core.models import UUIDModel, TimestampedModel, Tenant, TenantMembership
+from projecthub.core.models import UUIDModel, TimestampedModel, Tenant
 from .project_membership import ProjectMembership
 
 
@@ -21,14 +21,7 @@ class ProjectQuerySet(models.QuerySet):
         return self.filter(tenant=tenant)
 
     def visible_to(self, user, tenant):
-        if user.is_staff:
-            return self
-
-        tenant_membership = TenantMembership.objects.filter(
-            tenant=tenant, user=user
-        ).first()
-
-        if tenant_membership and tenant_membership.is_owner:
+        if user.is_staff or tenant.owner_id == user.id:
             return self
         return self.filter(members__user=user)
 
