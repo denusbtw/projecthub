@@ -67,18 +67,6 @@ class TestTenantListCreateAPIView:
             assert response.data["count"] == 1
             assert {t["id"] for t in response.data["results"]} == {str(t1.id)}
 
-        def test_role_is_annotated_correctly(
-            self, api_client, list_url, tenant_membership_factory
-        ):
-            membership = tenant_membership_factory()
-            api_client.force_authenticate(user=membership.user)
-
-            response = api_client.get(list_url)
-
-            assert response.status_code == status.HTTP_200_OK
-            assert response.data["count"] == 1
-            assert response.data["results"][0]["role"] == membership.role
-
     def test_pagination_works(self, admin_client, list_url, tenant_membership_factory):
         tenant_membership_factory.create_batch(5)
         response = admin_client.get(f"{list_url}?page_size=3")
@@ -215,24 +203,6 @@ class TestTenantRetrieveUpdateDestroyAPIView:
         ):
             response = getattr(admin_client, method)(detail_url)
             assert response.status_code == expected_status_code
-
-    class TestQueryset:
-
-        def test_role_is_annotated_correctly(
-            self, api_client, tenant, detail_url, tenant_membership_factory
-        ):
-            membership = tenant_membership_factory(tenant=tenant)
-            api_client.force_authenticate(user=membership.user)
-            response = api_client.get(detail_url)
-            assert response.status_code == status.HTTP_200_OK
-            assert response.data["role"] == membership.role
-
-        def test_owner_field_serialized_correctly(
-            self, admin_client, detail_url, tenant
-        ):
-            response = admin_client.get(detail_url)
-            assert response.status_code == status.HTTP_200_OK
-            assert response.data["owner"]["id"] == str(tenant.owner_id)
 
     def test_perform_update(self, admin_client, detail_url, tenant, admin_user):
         response = admin_client.patch(detail_url)

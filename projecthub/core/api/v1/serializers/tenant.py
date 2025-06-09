@@ -8,7 +8,6 @@ class BaseTenantReadSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
     sub_domain = serializers.CharField()
-    role = serializers.CharField()
     is_active = serializers.BooleanField()
 
 

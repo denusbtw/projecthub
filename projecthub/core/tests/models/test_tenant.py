@@ -47,28 +47,13 @@ class TestTenantMembership:
 @pytest.mark.django_db
 class TestTenantQuerySet:
 
-    def test_annotate_role_none_if_not_member(self, user, tenant_factory):
-        tenant = tenant_factory()
-        qs = Tenant.objects.annotate_role(user)
-        tenant = qs.get(pk=tenant.pk)
-        assert tenant.role is None
-
-    def test_annotate_role_not_none_if_member(
-            self, user, tenant_factory, tenant_membership_factory
-    ):
-        tenant = tenant_factory()
-        membership = tenant_membership_factory(tenant=tenant, user=user)
-        qs = Tenant.objects.annotate_role(user)
-        tenant = qs.get(pk=tenant.pk)
-        assert tenant.role == membership.role
-
     def test_visible_to_returns_all_if_staff(self, admin_user, tenant_factory):
         tenant_factory.create_batch(3)
         qs = Tenant.objects.visible_to(admin_user)
         assert qs.count() == 3
 
     def test_visible_to_returns_only_tenants_user_is_member_of(
-            self, user, tenant_factory, tenant_membership_factory
+        self, user, tenant_factory, tenant_membership_factory
     ):
         tenant = tenant_factory()
         another_tenant = tenant_factory()

@@ -16,7 +16,6 @@ from ..serializers import (
 class TenantListCreateAPIView(generics.ListCreateAPIView):
     pagination_class = TenantPagination
     permission_classes = [permissions.IsAuthenticated]
-    # TODO: move into TenantFilterMixin
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
@@ -28,7 +27,6 @@ class TenantListCreateAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         qs = Tenant.objects.visible_to(self.request.user)
-        qs = qs.annotate_role(self.request.user)
         return qs
 
     def get_serializer_class(self):
@@ -52,7 +50,6 @@ class TenantRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         qs = Tenant.objects.visible_to(self.request.user)
-        qs = qs.annotate_role(self.request.user)
         return qs
 
     def get_serializer_class(self):

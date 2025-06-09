@@ -7,12 +7,12 @@ from projecthub.core.models import TenantMembership
 from projecthub.permissions import (
     ReadOnlyPermission,
     IsTenantOwnerPermission,
-    IsSelfDeletePermission
+    IsSelfDeletePermission,
 )
 from projecthub.policies import (
     IsAuthenticatedPolicy,
     IsAdminUserPolicy,
-    IsTenantMemberPolicy
+    IsTenantMemberPolicy,
 )
 from ..filters import TenantMembershipFilterSet
 from ..serializers import (
@@ -23,29 +23,25 @@ from ..serializers import (
 )
 
 
-class TenantMembershipListCreateAPIView(SecureGenericAPIView,
-                                        generics.ListCreateAPIView):
+class TenantMembershipListCreateAPIView(
+    SecureGenericAPIView, generics.ListCreateAPIView
+):
     policy_classes = [
-        IsAuthenticatedPolicy
-        & (IsAdminUserPolicy | IsTenantMemberPolicy)
+        IsAuthenticatedPolicy & (IsAdminUserPolicy | IsTenantMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated
-        & (
-            permissions.IsAdminUser
-            | IsTenantOwnerPermission
-            | ReadOnlyPermission
-        )
+        & (permissions.IsAdminUser | IsTenantOwnerPermission | ReadOnlyPermission)
     ]
     pagination_class = TenantMembershipPagination
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
-        filters.OrderingFilter
+        filters.OrderingFilter,
     ]
     filterset_class = TenantMembershipFilterSet
-    search_fields = ["user__username"]
-    ordering_fields = ["created_at"]
+    search_fields = ("user__username",)
+    ordering_fields = ("created_at",)
 
     def get_queryset(self):
         qs = TenantMembership.objects.for_tenant(self.request.tenant)
@@ -60,12 +56,11 @@ class TenantMembershipListCreateAPIView(SecureGenericAPIView,
         serializer.save(tenant=self.request.tenant, created_by=self.request.user)
 
 
-class TenantMembershipRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
-                                                   generics.RetrieveUpdateDestroyAPIView
+class TenantMembershipRetrieveUpdateDestroyAPIView(
+    SecureGenericAPIView, generics.RetrieveUpdateDestroyAPIView
 ):
     policy_classes = [
-        IsAuthenticatedPolicy
-        & (IsAdminUserPolicy | IsTenantMemberPolicy)
+        IsAuthenticatedPolicy & (IsAdminUserPolicy | IsTenantMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated

@@ -1,19 +1,12 @@
 from django.conf import settings
 from django.db import models
-from django.db.models import OuterRef, Subquery, Q
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from .base import UUIDModel, TimestampedModel
-from .tenant_membership import TenantMembership
 
 
 class TenantQuerySet(models.QuerySet):
-
-    def annotate_role(self, user):
-        role_subquery = TenantMembership.objects.filter(
-            tenant=OuterRef("pk"), user=user
-        ).values("role")[:1]
-        return self.annotate(role=Subquery(role_subquery))
 
     def visible_to(self, user):
         if user.is_staff:
