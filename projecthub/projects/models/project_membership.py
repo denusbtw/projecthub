@@ -71,19 +71,6 @@ class ProjectMembership(UUIDModel, TimestampedModel):
         role = self.get_role_display()
         return f"{self.user.username} ({role}) in {self.project.name}"
 
-    #TODO: refactor all `is_*`
-    @property
-    def is_owner(self):
-        return self.role == self.Role.OWNER
-
-    @property
-    def is_supervisor(self):
-        return self.role == self.Role.SUPERVISOR
-
-    @property
-    def is_responsible(self):
-        return self.role == self.Role.RESPONSIBLE
-
     @property
     def is_user(self):
         return self.role == self.Role.USER
@@ -95,10 +82,6 @@ class ProjectMembership(UUIDModel, TimestampedModel):
     @property
     def is_reader(self):
         return self.role == self.Role.READER
-
-    @property
-    def is_staff(self):
-        return self.role in self.STAFF_USER_ROLES
 
     def set_role(self, role, updated_by):
         self.role = role

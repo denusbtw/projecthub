@@ -40,8 +40,8 @@ class ProjectListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView)
         filters.OrderingFilter,
     ]
     filterset_class = ProjectFilterSet
-    search_fields = ["name"]  # TODO: add search by description
-    ordering_fields = ["name", "created_at", "start_date", "end_date", "close_date"]
+    search_fields = ("name",)  # TODO: add search by description
+    ordering_fields = ("name", "created_at", "start_date", "end_date", "close_date")
 
     def get_queryset(self):
         qs = Project.objects.for_tenant(self.request.tenant)

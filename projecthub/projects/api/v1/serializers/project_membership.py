@@ -25,7 +25,7 @@ class BaseProjectMembershipWriteSerializer(serializers.ModelSerializer):
 class ProjectMembershipCreateSerializer(BaseProjectMembershipWriteSerializer):
     class Meta:
         model = ProjectMembership
-        fields = ("user", "role")
+        fields = ("id", "user", "role")
 
 
 class ProjectMembershipUpdateSerializer(BaseProjectMembershipWriteSerializer):
