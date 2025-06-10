@@ -14,6 +14,7 @@ class ProjectMembershipInline(admin.TabularInline):
     extra = 1
 
 
+# TODO: call `create_default_boards` after project created
 @admin.register(Project)
 class ProjectAdmin(BaseAdmin):
     list_display = (
@@ -23,7 +24,7 @@ class ProjectAdmin(BaseAdmin):
         "tenant_link",
         "start_date",
         "end_date",
-        "close_date"
+        "close_date",
     )
     list_select_related = ("tenant",)
     search_fields = ("name", "tenant__name")
@@ -42,9 +43,9 @@ class ProjectAdmin(BaseAdmin):
                     "description",
                     "start_date",
                     "end_date",
-                    "close_date"
+                    "close_date",
                 )
-            }
+            },
         ),
         (
             "Metadata",
@@ -54,19 +55,16 @@ class ProjectAdmin(BaseAdmin):
                     "created_by",
                     "updated_by",
                     "created_at",
-                    "updated_at"
+                    "updated_at",
                 )
-            }
-        )
+            },
+        ),
     ]
 
     @admin.display(description="Tenant")
     def tenant_link(self, obj):
         url = reverse("admin:core_tenant_change", args=(obj.tenant_id,))
-        return format_html(
-            '<a href={}>{}</a>',
-            url, obj.tenant.name
-        )
+        return format_html("<a href={}>{}</a>", url, obj.tenant.name)
 
 
 @admin.register(ProjectMembership)
@@ -77,34 +75,21 @@ class ProjectMembershipAdmin(BaseAdmin):
     list_filter = ("role",)
     readonly_fields = ("created_at", "updated_at", "created_by", "updated_by")
     autocomplete_fields = ("project", "user")
-    
+
     fieldsets = [
-        (
-            None,
-            {
-                "fields": ("project", "user", "role")
-            }
-        ),
+        (None, {"fields": ("project", "user", "role")}),
         (
             "Metadata",
-            {
-                "fields": ("created_at", "updated_at", "created_by", "updated_by")
-            }
-        )
+            {"fields": ("created_at", "updated_at", "created_by", "updated_by")},
+        ),
     ]
 
     @admin.display(description="Project")
     def project_link(self, obj):
         url = reverse("admin:projects_project_change", args=(obj.project_id,))
-        return format_html(
-            '<a href="{}">{}</a>',
-            url, obj.project.name
-        )
+        return format_html('<a href="{}">{}</a>', url, obj.project.name)
 
     @admin.display(description="User")
     def user_link(self, obj):
         url = reverse("admin:users_user_change", args=(obj.user_id,))
-        return format_html(
-            '<a href="{}">{}</a>',
-            url, obj.user.username
-        )
+        return format_html('<a href="{}">{}</a>', url, obj.user.username)

@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from projecthub.core.api.v1.serializers.base import UserNestedSerializer
 from projecthub.projects.models import Project
+from projecthub.tasks.services import create_default_boards
 
 
 class BaseProjectReadSerializer(serializers.Serializer):
@@ -26,14 +27,9 @@ class ProjectDetailSerializer(BaseProjectReadSerializer):
 
 class ProjectCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
-        # DEFAULT_BOARDS = {
-        #     {"code": Type.TODO, "name": "To Do", "order": 1},
-        #     {"code": Type.IN_PROGRESS, "name": "In Progress", "order": 2},
-        #     {"code": Type.IN_REVIEW, "name": "In Review", "order": 3},
-        #     {"code": Type.DONE, "name": "Done", "order": 4},
-        # }
-        # TODO: create default boards
-        return super().create(validated_data)
+        instance = super().create(validated_data)
+        create_default_boards(instance)
+        return instance
 
     class Meta:
         model = Project

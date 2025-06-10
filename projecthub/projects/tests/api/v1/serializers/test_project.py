@@ -8,6 +8,7 @@ from projecthub.projects.api.v1.serializers import (
     ProjectUpdateSerializer,
 )
 from projecthub.projects.models import Project
+from projecthub.tasks.models import Board
 
 
 @pytest.fixture
@@ -56,6 +57,19 @@ class TestProjectCreateSerializer:
         serializer = ProjectCreateSerializer(data={})
         with pytest.raises(ValidationError):
             serializer.is_valid(raise_exception=True)
+
+    def test_default_boards_are_created(self, tenant, data):
+        serializer = ProjectCreateSerializer(data=data)
+        assert serializer.is_valid(), serializer.errors
+        project = serializer.save(tenant=tenant)
+        boards = Board.objects.filter(project=project)
+        assert len(boards) == 4
+        assert {
+            Board.Type.TODO,
+            Board.Type.IN_PROGRESS,
+            Board.Type.IN_REVIEW,
+            Board.Type.DONE,
+        } == set(boards.values_list("type", flat=True))
 
 
 @pytest.mark.django_db
