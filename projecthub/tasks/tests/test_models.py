@@ -77,6 +77,66 @@ class TestTask:
         with pytest.raises(ValidationError, match="updated_by is required."):
             task.revoke(updated_by=None)
 
+    class TestAssignResponsible:
+
+        def test_does_not_call_celery_task_when_new_responsible_is_none(
+            self, task, mocker
+        ):
+            mock_send_task_assignment_email = mocker.patch(
+                "projecthub.tasks.tasks.send_task_assignment_email"
+            )
+            task.assign_responsible(None)
+            mock_send_task_assignment_email.delay.assert_not_called()
+
+        def test_calls_celery_task_when_assigning_new_responsible(
+            self, task_factory, user, mocker
+        ):
+            mock_send_task_assignment_email = mocker.patch(
+                "projecthub.tasks.tasks.send_task_assignment_email"
+            )
+            task = task_factory(responsible=None)
+            task.assign_responsible(user)
+            mock_send_task_assignment_email.delay.assert_called_once_with(
+                task_id=task.pk, user_id=user.pk
+            )
+
+        def test_does_not_call_celery_task_when_assigning_same_responsible(
+            self, task, mocker
+        ):
+            mock_send_task_assignment_email = mocker.patch(
+                "projecthub.tasks.tasks.send_task_assignment_email"
+            )
+            current_responsible = task.responsible
+            task.assign_responsible(current_responsible)
+            mock_send_task_assignment_email.delay.assert_not_called()
+
+        def test_updates_responsible_field(self, task, user):
+            old_responsible = task.responsible
+            task.assign_responsible(user)
+            task.refresh_from_db()
+            assert task.responsible == user
+            assert task.responsible != old_responsible
+
+        def test_calls_celery_task_when_reassigning_responsible(
+            self, task, user, mocker
+        ):
+            mock_send_task_assignment_email = mocker.patch(
+                "projecthub.tasks.tasks.send_task_assignment_email"
+            )
+            task.assign_responsible(user)
+            mock_send_task_assignment_email.delay.assert_called_once_with(
+                task_id=task.pk, user_id=user.pk
+            )
+
+        def test_does_not_call_celery_task_when_removing_responsible(
+            self, task, mocker
+        ):
+            mock_send_task_assignment_email = mocker.patch(
+                "projecthub.tasks.tasks.send_task_assignment_email"
+            )
+            task.assign_responsible(None)
+            mock_send_task_assignment_email.delay.assert_not_called()
+
 
 @pytest.mark.django_db
 class TestBoard:

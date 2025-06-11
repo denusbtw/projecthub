@@ -189,3 +189,15 @@ class Task(UUIDModel, TimestampedModel):
     @property
     def is_in_review(self):
         return self.board and self.board.is_in_review
+
+    def assign_responsible(self, new_responsible):
+        from projecthub.tasks.tasks import send_task_assignment_email
+
+        old_responsible_id = self.responsible_id
+        self.responsible = new_responsible
+        self.save()
+
+        if new_responsible and old_responsible_id != new_responsible.id:
+            send_task_assignment_email.delay(
+                task_id=self.pk, user_id=new_responsible.id
+            )
