@@ -193,9 +193,11 @@ class Task(UUIDModel, TimestampedModel):
     def assign_responsible(self, new_responsible):
         from projecthub.tasks.tasks import send_task_assignment_email
 
-        old_responsible_id = self.responsible_id
+        old_instance = Task.objects.get(pk=self.pk)
+        old_responsible_id = old_instance.responsible_id
+
         self.responsible = new_responsible
-        self.save()
+        self.save(update_fields=["responsible"])
 
         if new_responsible and old_responsible_id != new_responsible.id:
             send_task_assignment_email.delay(

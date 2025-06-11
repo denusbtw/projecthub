@@ -53,6 +53,11 @@ class TaskAdmin(BaseAdmin):
         ),
     ]
 
+    def save_model(self, request, obj, form, change):
+        responsible = form.cleaned_data.pop("responsible")
+        obj.assign_responsible(responsible)
+        super().save_model(request, obj, form, change)
+
     @admin.display(description="Project")
     def project_link(self, obj):
         url = reverse("admin:projects_project_change", args=(obj.project_id,))
