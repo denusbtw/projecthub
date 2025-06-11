@@ -39,6 +39,8 @@ class ProjectAdmin(BaseAdmin):
             {
                 "fields": (
                     "name",
+                    "owner",
+                    "supervisor",
                     "status",
                     "description",
                     "start_date",

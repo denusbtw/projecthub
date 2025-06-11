@@ -43,11 +43,6 @@ class BaseProjectWriteSerializer(serializers.ModelSerializer):
 
 
 class ProjectCreateSerializer(BaseProjectWriteSerializer):
-    def create(self, validated_data):
-        instance = super().create(validated_data)
-        create_default_boards(instance)
-        return instance
-
     class Meta:
         model = Project
         fields = (
@@ -55,12 +50,25 @@ class ProjectCreateSerializer(BaseProjectWriteSerializer):
             "name",
             "owner",
             "supervisor",
-            "status",
             "description",
             "start_date",
             "end_date",
-            "close_date",
         )
+
+    def create(self, validated_data):
+        owner = validated_data.get("owner")
+        if owner is None:
+            validated_data["owner"] = self.context["request_user"]
+
+        start_date = validated_data.pop("start_date", None)
+
+        instance = super().create(validated_data)
+
+        if start_date:
+            instance.set_start_date(start_date)
+
+        create_default_boards(instance)
+        return instance
 
 
 class ProjectUpdateSerializer(BaseProjectWriteSerializer):
@@ -70,12 +78,49 @@ class ProjectUpdateSerializer(BaseProjectWriteSerializer):
             "name",
             "owner",
             "supervisor",
-            "status",
             "description",
+            "status",
             "start_date",
             "end_date",
-            "close_date",
         )
         extra_kwargs = {
             "name": {"required": False},
         }
+
+    def validate(self, attrs):
+        # забороняє редагування якщо проєкт заархівований
+        if self.instance.is_archived:
+            raise serializers.ValidationError("You cannot modify archived project.")
+        return attrs
+
+    def validate_status(self, status):
+        # дозволено тільки архівувати проєкт
+        if status != Project.Status.ARCHIVED:
+            raise serializers.ValidationError("You may only archive project.")
+
+        # архівувати можна лише активні проєкти
+        if not self.instance.is_active:
+            raise serializers.ValidationError("You may only archive active projects.")
+
+        return status
+
+    def validate_start_date(self, start_date):
+        # не можна змінити дату старту активного проєкту
+        if self.instance.is_active and start_date != self.instance.start_date:
+            raise serializers.ValidationError(
+                "Cannot change start_date when project is active."
+            )
+        return start_date
+
+    def update(self, instance, validated_data):
+        status = validated_data.pop("status", None)
+        if status:
+            instance.archive(self.context["request_user"])
+
+        start_date = validated_data.pop("start_date", None)
+        if start_date:
+            instance.updated_by = self.context["request_user"]
+            instance.set_start_date(start_date)
+
+        instance = super().update(instance, validated_data)
+        return instance

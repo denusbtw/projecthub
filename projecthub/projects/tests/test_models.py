@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -23,31 +23,32 @@ class TestProject:
                 end_date=end_date,
             )
 
-    def test_activate_raises_error_without_updated_by(self, project):
-        with pytest.raises(ValidationError, match="updated_by is required."):
-            project.activate(updated_by=None)
-
-    def test_activate_sets_active_status_and_updated_by(self, project_factory, user):
-        project = project_factory(status=Project.Status.PENDING)
-        project.activate(updated_by=user)
-        assert project.is_active
-        assert project.updated_by == user
-
-    def test_mark_pending_raises_error_without_updated_by(self, project):
-        with pytest.raises(ValidationError, match="updated_by is required."):
-            project.mark_pending(updated_by=None)
-
-    def test_mark_pending_sets_pending_status_and_updated_by(
-        self, project_factory, user
+    def test_set_start_date_sets_pending_status_if_start_date_after_now(
+        self, project_factory
     ):
-        project = project_factory(status=Project.Status.ACTIVE)
-        project.mark_pending(updated_by=user)
+        start_date = timezone.now().date() + timedelta(days=3)
+        project = project_factory(start_date=None, end_date=None)
+        project.set_start_date(start_date)
         assert project.is_pending
-        assert project.updated_by == user
+
+    def test_set_start_date_sets_active_status_if_start_date_before_now(
+        self, project_factory
+    ):
+        start_date = timezone.now().date() - timedelta(days=3)
+        project = project_factory(start_date=None, end_date=None)
+        project.set_start_date(start_date)
+        assert project.is_active
 
     def test_archive_raises_error_without_updated_by(self, project):
         with pytest.raises(ValidationError, match="updated_by is required."):
             project.archive(updated_by=None)
+
+    def test_error_if_archive_already_archived_project(self, project_factory, user):
+        project = project_factory(status=Project.Status.ARCHIVED)
+        with pytest.raises(ValidationError) as exc:
+            project.archive(updated_by=user)
+
+        assert "Project is already archived" in str(exc.value)
 
     def test_archive_sets_archived_status_and_updated_by(self, project_factory, user):
         project = project_factory(status=Project.Status.ACTIVE)

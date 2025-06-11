@@ -135,46 +135,31 @@ class Project(UUIDModel, TimestampedModel):
         status = self.get_status_display()
         return f"{self.name} ({status})"
 
-    def activate(self, updated_by):
-        if not updated_by:
-            raise ValidationError("updated_by is required.")
+    def set_start_date(self, start_date):
+        self.start_date = start_date
+        now = timezone.now()
 
-        if not self.status == self.Status.ACTIVE:
-            self.status = self.Status.ACTIVE
-            self.updated_by = updated_by
-            self.updated_at = timezone.now()
-            self.close_date = None
-            self.save(
-                update_fields=["status", "updated_by", "updated_at", "close_date"]
-            )
-
-    # видалити. додати метод set_start_date, який залежно від дати ставить статус
-    def mark_pending(self, updated_by):
-        if not updated_by:
-            raise ValidationError("updated_by is required.")
-
-        if not self.status == self.Status.PENDING:
+        if start_date > now.date():
             self.status = self.Status.PENDING
-            self.updated_by = updated_by
-            self.updated_at = timezone.now()
-            self.close_date = None
-            self.save(
-                update_fields=["status", "updated_by", "updated_at", "close_date"]
-            )
+        elif start_date <= now.date():
+            self.status = self.Status.ACTIVE
+
+        self.close_date = None
+        self.save(update_fields=["status", "close_date"])
 
     def archive(self, updated_by):
-        if not updated_by:
+        if updated_by is None:
             raise ValidationError("updated_by is required.")
 
-        if not self.status == self.Status.ARCHIVED:
-            now = timezone.now()
-            self.status = self.Status.ARCHIVED
-            self.updated_by = updated_by
-            self.updated_at = now
-            self.close_date = now
-            self.save(
-                update_fields=["status", "updated_by", "updated_at", "close_date"]
-            )
+        if self.is_archived:
+            raise ValidationError("Project is already archived.")
+
+        now = timezone.now()
+        self.status = self.Status.ARCHIVED
+        self.updated_by = updated_by
+        self.updated_at = now
+        self.close_date = now
+        self.save(update_fields=["status", "updated_by", "updated_at", "close_date"])
 
     @property
     def is_active(self):

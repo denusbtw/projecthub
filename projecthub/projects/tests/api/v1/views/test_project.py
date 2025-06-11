@@ -11,8 +11,8 @@ def list_url():
 
 
 @pytest.fixture
-def detail_url(project):
-    return reverse("api:v1:project_detail", kwargs={"pk": project.pk})
+def detail_url(active_project):
+    return reverse("api:v1:project_detail", kwargs={"pk": active_project.pk})
 
 
 @pytest.fixture
@@ -98,7 +98,7 @@ class TestProjectListCreateAPIView:
 
         @pytest.mark.parametrize(
             "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
+            [("get", status.HTTP_200_OK), ("post", status.HTTP_403_FORBIDDEN)],
         )
         def test_admin(
             self,
@@ -163,16 +163,15 @@ class TestProjectListCreateAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 3
 
-    def test_perform_create(
-        self, admin_client, list_url, tenant, http_host, admin_user
-    ):
+    def test_perform_create(self, api_client, list_url, tenant, http_host):
+        api_client.force_authenticate(user=tenant.owner)
         data = {"name": "todo project"}
-        response = admin_client.post(list_url, data=data, HTTP_HOST=http_host)
+        response = api_client.post(list_url, data=data, HTTP_HOST=http_host)
         assert response.status_code == status.HTTP_201_CREATED
         project = Project.objects.get(id=response.data["id"])
         assert project.tenant == tenant
-        assert project.created_by == admin_user
-        assert project.updated_by == admin_user
+        assert project.created_by == tenant.owner
+        assert project.updated_by == tenant.owner
 
     def test_filtering_works(
         self, admin_client, list_url, tenant, project_factory, john, alice, http_host
@@ -271,82 +270,16 @@ class TestProjectRetrieveUpdateDestroyAPIView:
                 ("delete", status.HTTP_403_FORBIDDEN),
             ],
         )
-        def test_project_reader(
-            self,
-            api_client,
-            detail_url,
-            http_host,
-            project_reader,
-            method,
-            expected_status_code,
-        ):
-            api_client.force_authenticate(user=project_reader.user)
-            response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
-            assert response.status_code == expected_status_code
-
-        @pytest.mark.parametrize(
-            "method, expected_status_code",
-            [
-                ("get", status.HTTP_200_OK),
-                ("put", status.HTTP_403_FORBIDDEN),
-                ("patch", status.HTTP_403_FORBIDDEN),
-                ("delete", status.HTTP_403_FORBIDDEN),
-            ],
-        )
-        def test_project_guest(
-            self,
-            api_client,
-            detail_url,
-            http_host,
-            project_guest,
-            method,
-            expected_status_code,
-        ):
-            api_client.force_authenticate(user=project_guest.user)
-            response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
-            assert response.status_code == expected_status_code
-
-        @pytest.mark.parametrize(
-            "method, expected_status_code",
-            [
-                ("get", status.HTTP_200_OK),
-                ("put", status.HTTP_403_FORBIDDEN),
-                ("patch", status.HTTP_403_FORBIDDEN),
-                ("delete", status.HTTP_403_FORBIDDEN),
-            ],
-        )
         def test_project_user(
             self,
             api_client,
             detail_url,
             http_host,
-            project_user,
+            active_project_user,
             method,
             expected_status_code,
         ):
-            api_client.force_authenticate(user=project_user.user)
-            response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
-            assert response.status_code == expected_status_code
-
-        @pytest.mark.parametrize(
-            "method, expected_status_code",
-            [
-                ("get", status.HTTP_200_OK),
-                ("put", status.HTTP_403_FORBIDDEN),
-                ("patch", status.HTTP_403_FORBIDDEN),
-                ("delete", status.HTTP_403_FORBIDDEN),
-            ],
-        )
-        def test_project_responsible(
-            self,
-            api_client,
-            detail_url,
-            http_host,
-            project,
-            method,
-            expected_status_code,
-        ):
-            api_client.force_authenticate(user=project.responsible)
+            api_client.force_authenticate(user=active_project_user.user)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -364,11 +297,11 @@ class TestProjectRetrieveUpdateDestroyAPIView:
             api_client,
             detail_url,
             http_host,
-            project,
+            active_project,
             method,
             expected_status_code,
         ):
-            api_client.force_authenticate(user=project.supervisor)
+            api_client.force_authenticate(user=active_project.supervisor)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -386,11 +319,11 @@ class TestProjectRetrieveUpdateDestroyAPIView:
             api_client,
             detail_url,
             http_host,
-            project,
+            active_project,
             method,
             expected_status_code,
         ):
-            api_client.force_authenticate(user=project.owner)
+            api_client.force_authenticate(user=active_project.owner)
             response = getattr(api_client, method)(detail_url, HTTP_HOST=http_host)
             assert response.status_code == expected_status_code
 
@@ -432,9 +365,9 @@ class TestProjectRetrieveUpdateDestroyAPIView:
             assert response.status_code == expected_status_code
 
     def test_perform_update(
-        self, admin_client, detail_url, http_host, admin_user, project
+        self, admin_client, detail_url, http_host, admin_user, active_project
     ):
         response = admin_client.patch(detail_url, HTTP_HOST=http_host)
         assert response.status_code == status.HTTP_200_OK
-        project.refresh_from_db()
-        assert project.updated_by == admin_user
+        active_project.refresh_from_db()
+        assert active_project.updated_by == admin_user

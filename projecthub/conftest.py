@@ -63,6 +63,21 @@ def project(db, tenant):
 
 
 @pytest.fixture
+def active_project(db, tenant, project_factory):
+    return project_factory(active=True, tenant=tenant)
+
+
+@pytest.fixture
+def pending_project(db, tenant, project_factory):
+    return project_factory(pending=True, tenant=tenant)
+
+
+@pytest.fixture
+def archived_project(db, tenant, project_factory):
+    return project_factory(archived=True, tenant=tenant)
+
+
+@pytest.fixture
 def project_membership_factory():
     return ProjectMembershipFactory
 
@@ -78,10 +93,33 @@ def project_user(db, project):
 
 
 @pytest.fixture
+def active_project_user(db, active_project):
+    return ProjectMembershipFactory(
+        project=active_project, role=ProjectMembership.Role.USER
+    )
+
+
+@pytest.fixture
+def pending_project_user(db, pending_project):
+    return ProjectMembershipFactory(
+        project=pending_project, role=ProjectMembership.Role.USER
+    )
+
+
+@pytest.fixture
+def archived_project_user(db, archived_project):
+    return ProjectMembershipFactory(
+        project=archived_project, role=ProjectMembership.Role.USER
+    )
+
+
+# TODO: remove
+@pytest.fixture
 def project_guest(db, project):
     return ProjectMembershipFactory(project=project, role=ProjectMembership.Role.GUEST)
 
 
+# TODO: remove
 @pytest.fixture
 def project_reader(db, project):
     return ProjectMembershipFactory(project=project, role=ProjectMembership.Role.READER)

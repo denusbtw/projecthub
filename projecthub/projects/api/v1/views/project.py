@@ -30,8 +30,7 @@ class ProjectListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView)
         IsAuthenticatedPolicy & (IsAdminUserPolicy | IsTenantMemberPolicy)
     ]
     permission_classes = [
-        permissions.IsAuthenticated
-        & (permissions.IsAdminUser | IsTenantOwnerPermission | ReadOnlyPermission)
+        permissions.IsAuthenticated & (IsTenantOwnerPermission | ReadOnlyPermission)
     ]
     pagination_class = ProjectPagination
     filter_backends = [
@@ -56,13 +55,12 @@ class ProjectListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView)
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["tenant"] = self.request.tenant
+        context["request_user"] = self.request.user
         return context
 
     def perform_create(self, serializer):
         serializer.save(
             tenant=self.request.tenant,
-            owner=self.request.user,
-            supervisor=self.request.user,
             responsible=self.request.user,
             created_by=self.request.user,
             updated_by=self.request.user,
