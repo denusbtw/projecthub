@@ -1,4 +1,5 @@
 import pytest
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.utils import IntegrityError
 
@@ -44,6 +45,39 @@ class TestTenant:
                 tenant_factory(owner=john, name="TenantA")
 
         tenant_factory(owner=alice, name="TenantA")
+
+    @pytest.mark.parametrize(
+        "sub_domain",
+        [
+            "abc",
+            "abc123",
+            "abc-def",
+            "abc-def-123",
+            "a1-b2-c3",
+            "z" * 63,  # максимум
+        ],
+    )
+    def test_valid_sub_domains(self, user, sub_domain):
+        tenant = Tenant(owner=user, name="test", sub_domain=sub_domain)
+        tenant.full_clean()
+
+    @pytest.mark.parametrize(
+        "sub_domain",
+        [
+            "-abc",  # починається з дефіса
+            "abc-",  # закінчується дефісом
+            "abc--def",  # подвійний дефіс
+            "Abc",  # велика літера
+            "abc_def",  # недопустимий символ "_"
+            "abc def",  # пробіл
+            "абв",  # Unicode
+            "z" * 64,  # більше 63 символів
+        ],
+    )
+    def test_invalid_subdomains(self, user, sub_domain):
+        tenant = Tenant(owner=user, name="test", sub_domain=sub_domain)
+        with pytest.raises(ValidationError):
+            tenant.full_clean()
 
 
 @pytest.mark.django_db
