@@ -17,3 +17,9 @@ def archive_ended_projects():
     ended_projects = ended_projects.filter(has_open_tasks=False)
 
     ended_projects.update(status=Project.Status.ARCHIVED, close_date=timezone.now())
+
+
+@shared_task
+def activate_pending_projects():
+    pending_projects = Project.objects.filter(start_date__lte=timezone.now())
+    pending_projects.update(status=Project.Status.ACTIVE)

@@ -4,7 +4,7 @@ import pytest
 from django.utils import timezone
 
 from projecthub.projects.models import Project
-from projecthub.projects.tasks import archive_ended_projects
+from projecthub.projects.tasks import archive_ended_projects, activate_pending_projects
 
 
 @pytest.mark.django_db
@@ -39,3 +39,26 @@ class TestArchiveEndedProjects:
         archive_ended_projects()
         project.refresh_from_db()
         assert not project.is_archived
+
+
+@pytest.mark.django_db
+class TestActivatePendingProjects:
+
+    def test_activates_only_pending_projects_with_start_date_after_now(
+        self, project_factory
+    ):
+        now = timezone.now()
+        past_date = now - timedelta(days=1)
+        future_date = now + timedelta(days=1)
+
+        project1 = project_factory(status=Project.Status.PENDING, start_date=past_date)
+        project2 = project_factory(
+            status=Project.Status.PENDING, start_date=future_date
+        )
+
+        activate_pending_projects()
+
+        project1.refresh_from_db()
+        project2.refresh_from_db()
+        assert project1.is_active
+        assert project2.is_pending
