@@ -143,7 +143,10 @@ class Project(UUIDModel, TimestampedModel):
             self.status = self.Status.ACTIVE
             self.updated_by = updated_by
             self.updated_at = timezone.now()
-            self.save(update_fields=["status", "updated_by", "updated_at"])
+            self.close_date = None
+            self.save(
+                update_fields=["status", "updated_by", "updated_at", "close_date"]
+            )
 
     def mark_pending(self, updated_by):
         if not updated_by:
@@ -153,7 +156,10 @@ class Project(UUIDModel, TimestampedModel):
             self.status = self.Status.PENDING
             self.updated_by = updated_by
             self.updated_at = timezone.now()
-            self.save(update_fields=["status", "updated_by", "updated_at"])
+            self.close_date = None
+            self.save(
+                update_fields=["status", "updated_by", "updated_at", "close_date"]
+            )
 
     def archive(self, updated_by):
         if not updated_by:
@@ -186,23 +192,3 @@ class Project(UUIDModel, TimestampedModel):
         if self.start_date and self.end_date:
             return self.end_date - self.start_date
         return None
-
-    # TODO: refactor
-    def has_role(self, role: str, user=None):
-        # if user is not provided, then checks whether project has user with such role
-        # if user is provided, checks whether user has such role in project
-        qs = self.members.filter(role=role)
-        if user:
-            qs = qs.filter(user=user)
-        return qs.exists()
-
-    def get_role_of(self, user):
-        if self.owner_id == user.id:
-            return "owner"
-        elif self.supervisor_id == user.id:
-            return "supervisor"
-        elif self.responsible_id == user.id:
-            return "responsible"
-
-        membership = self.members.filter(user=user).first()
-        return membership.role if membership else None
