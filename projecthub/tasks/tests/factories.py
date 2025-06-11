@@ -41,27 +41,29 @@ class TaskFactory(factory.django.DjangoModelFactory):
         if not created:
             return
 
-        ProjectMembership.objects.get_or_create(
-            project_id=self.project_id,
-            user_id=self.responsible_id,
-            defaults={
-                "role": ProjectMembership.Role.USER,
-                "created_by": UserFactory(),
-                "updated_by": UserFactory(),
-            },
-        )
+        if self.responsible:
+            ProjectMembership.objects.get_or_create(
+                project_id=self.project_id,
+                user_id=self.responsible_id,
+                defaults={
+                    "role": ProjectMembership.Role.USER,
+                    "created_by": UserFactory(),
+                    "updated_by": UserFactory(),
+                },
+            )
 
     @factory.post_generation
     def create_tenant_membership(self, created, extracted, **kwargs):
         if not created:
             return
 
-        TenantMembership.objects.get_or_create(
-            tenant_id=self.project.tenant_id,
-            user_id=self.responsible_id,
-            defaults={
-                "role": TenantMembership.Role.USER,
-                "created_by": UserFactory(),
-                "updated_by": UserFactory(),
-            },
-        )
+        if self.responsible:
+            TenantMembership.objects.get_or_create(
+                tenant_id=self.project.tenant_id,
+                user_id=self.responsible_id,
+                defaults={
+                    "role": TenantMembership.Role.USER,
+                    "created_by": UserFactory(),
+                    "updated_by": UserFactory(),
+                },
+            )
