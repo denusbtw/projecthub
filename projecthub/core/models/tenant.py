@@ -74,20 +74,17 @@ class Tenant(UUIDModel, TimestampedModel):
     def is_inactive(self):
         return not self.is_active
 
-    def activate(self, updated_by):
+    def _change_active_state(self, active: bool, updated_by):
         if not updated_by:
             raise ValueError("updated_by is required.")
 
-        if self.is_inactive:
-            self.is_active = True
+        if self.is_active != active:
+            self.is_active = active
             self.updated_by = updated_by
             self.save(update_fields=["is_active", "updated_by"])
+
+    def activate(self, updated_by):
+        self._change_active_state(True, updated_by)
 
     def deactivate(self, updated_by):
-        if not updated_by:
-            raise ValueError("updated_by is required.")
-
-        if self.is_active:
-            self.is_active = False
-            self.updated_by = updated_by
-            self.save(update_fields=["is_active", "updated_by"])
+        self._change_active_state(False, updated_by)
