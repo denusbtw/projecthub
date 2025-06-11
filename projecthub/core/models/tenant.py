@@ -51,6 +51,11 @@ class Tenant(UUIDModel, TimestampedModel):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("owner", "name"), name="unique_tenant_name_for_owner"
+            )
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.sub_domain})"
