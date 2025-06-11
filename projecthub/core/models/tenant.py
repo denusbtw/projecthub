@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -23,9 +24,18 @@ class Tenant(UUIDModel, TimestampedModel):
         help_text=_("Owner of tenant"),
     )
     name = models.CharField(max_length=255, help_text=_("Name of tenant."))
-    # TODO: add validation, so only `-` allowed
     sub_domain = models.CharField(
-        max_length=255, unique=True, help_text=_("Subdomain of tenant.")
+        max_length=63,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r"^[a-z0-9]+(-[a-z0-9]+)*$",
+                message=_(
+                    "Subdomain must contain only lowercase letters, numbers and hyphens, and cannot start or end with a hyphen."
+                ),
+            )
+        ],
+        help_text=_("Subdomain of tenant."),
     )
     is_active = models.BooleanField(
         default=True, help_text=_("Determines whether tenant is active.")
