@@ -35,6 +35,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "storages",
     "flower",
+    "django_celery_beat",
 ]
 
 LOCAL_APPS = [
@@ -178,6 +179,7 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND")
 CELERY_TIMEZONE = env("CELERY_TIMEZONE")
 CELERY_TRACK_TASK_STARTED = env("CELERY_TRACK_TASK_STARTED")
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
 
 EMAIL_BACKEND = env(
