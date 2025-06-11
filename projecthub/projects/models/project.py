@@ -148,6 +148,7 @@ class Project(UUIDModel, TimestampedModel):
                 update_fields=["status", "updated_by", "updated_at", "close_date"]
             )
 
+    # видалити. додати метод set_start_date, який залежно від дати ставить статус
     def mark_pending(self, updated_by):
         if not updated_by:
             raise ValidationError("updated_by is required.")

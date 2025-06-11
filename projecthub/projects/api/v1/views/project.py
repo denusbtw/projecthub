@@ -53,6 +53,11 @@ class ProjectListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView)
             return ProjectCreateSerializer
         return ProjectListSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["tenant"] = self.request.tenant
+        return context
+
     def perform_create(self, serializer):
         serializer.save(
             tenant=self.request.tenant,
@@ -90,6 +95,11 @@ class ProjectRetrieveUpdateDestroyAPIView(
         if self.request.method in {"PUT", "PATCH"}:
             return ProjectUpdateSerializer
         return ProjectDetailSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["tenant"] = self.request.tenant
+        return context
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)

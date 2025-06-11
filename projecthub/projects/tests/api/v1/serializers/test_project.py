@@ -71,10 +71,110 @@ class TestProjectCreateSerializer:
             Board.Type.DONE,
         } == set(boards.values_list("type", flat=True))
 
+    def test_error_if_owner_is_not_tenant_owner_or_member(self, user, tenant, data):
+        data["owner"] = user.pk
+        context = {"tenant": tenant}
+        serializer = ProjectCreateSerializer(data=data, context=context)
+        with pytest.raises(ValidationError) as exc:
+            serializer.is_valid(raise_exception=True)
+
+        assert "Must be owner or member of tenant" in str(exc.value)
+
+    def test_error_if_supervisor_is_not_tenant_owner_or_member(
+        self, user, tenant, data
+    ):
+        data["supervisor"] = user.pk
+        context = {"tenant": tenant}
+        serializer = ProjectCreateSerializer(data=data, context=context)
+        with pytest.raises(ValidationError) as exc:
+            serializer.is_valid(raise_exception=True)
+
+        assert "Must be owner or member of tenant" in str(exc.value)
+
+    def test_no_error_if_owner_is_tenant_owner(self, tenant, data):
+        data["owner"] = tenant.owner_id
+        context = {"tenant": tenant}
+        serializer = ProjectCreateSerializer(data=data, context=context)
+        assert serializer.is_valid(), serializer.errors
+
+    def test_no_error_if_supervisor_is_tenant_owner(self, tenant, data):
+        data["supervisor"] = tenant.owner_id
+        context = {"tenant": tenant}
+        serializer = ProjectCreateSerializer(data=data, context=context)
+        assert serializer.is_valid(), serializer.errors
+
+    def test_no_error_if_owner_is_tenant_member(
+        self, user, tenant, tenant_membership_factory, data
+    ):
+        tenant_membership_factory(tenant=tenant, user=user)
+        data["owner"] = user.pk
+        context = {"tenant": tenant}
+        serializer = ProjectCreateSerializer(data=data, context=context)
+        assert serializer.is_valid(), serializer.errors
+
+    def test_no_error_if_supervisor_is_tenant_member(
+        self, user, tenant, tenant_membership_factory, data
+    ):
+        tenant_membership_factory(tenant=tenant, user=user)
+        data["supervisor"] = user.pk
+        context = {"tenant": tenant}
+        serializer = ProjectCreateSerializer(data=data, context=context)
+        assert serializer.is_valid(), serializer.errors
+
 
 @pytest.mark.django_db
 class TestProjectUpdateSerializer:
 
     def test_no_error_if_empty_data(self, project):
         serializer = ProjectUpdateSerializer(project, data={})
+        assert serializer.is_valid(), serializer.errors
+
+    def test_error_if_owner_is_not_tenant_owner_or_member(self, project, user, tenant):
+        data = {"owner": user.pk}
+        context = {"tenant": tenant}
+        serializer = ProjectUpdateSerializer(project, data=data, context=context)
+        with pytest.raises(ValidationError) as exc:
+            serializer.is_valid(raise_exception=True)
+
+        assert "Must be owner or member of tenant" in str(exc.value)
+
+    def test_error_if_supervisor_is_not_tenant_owner_or_member(
+        self, project, user, tenant
+    ):
+        data = {"supervisor": user.pk}
+        context = {"tenant": tenant}
+        serializer = ProjectUpdateSerializer(project, data=data, context=context)
+        with pytest.raises(ValidationError) as exc:
+            serializer.is_valid(raise_exception=True)
+
+        assert "Must be owner or member of tenant" in str(exc.value)
+
+    def test_no_error_if_owner_is_tenant_owner(self, tenant, project):
+        data = {"owner": tenant.owner_id}
+        context = {"tenant": tenant}
+        serializer = ProjectUpdateSerializer(project, data=data, context=context)
+        assert serializer.is_valid(), serializer.errors
+
+    def test_no_error_if_supervisor_is_tenant_owner(self, tenant, project):
+        data = {"supervisor": tenant.owner_id}
+        context = {"tenant": tenant}
+        serializer = ProjectUpdateSerializer(project, data=data, context=context)
+        assert serializer.is_valid(), serializer.errors
+
+    def test_no_error_if_owner_is_tenant_member(
+        self, user, tenant, tenant_membership_factory, project
+    ):
+        tenant_membership_factory(tenant=tenant, user=user)
+        data = {"owner": user.pk}
+        context = {"tenant": tenant}
+        serializer = ProjectUpdateSerializer(project, data=data, context=context)
+        assert serializer.is_valid(), serializer.errors
+
+    def test_no_error_if_supervisor_is_tenant_member(
+        self, user, tenant, tenant_membership_factory, project
+    ):
+        tenant_membership_factory(tenant=tenant, user=user)
+        data = {"supervisor": user.pk}
+        context = {"tenant": tenant}
+        serializer = ProjectUpdateSerializer(project, data=data, context=context)
         assert serializer.is_valid(), serializer.errors
