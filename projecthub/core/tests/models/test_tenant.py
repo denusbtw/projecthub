@@ -1,4 +1,6 @@
 import pytest
+from django.db import transaction
+from django.db.utils import IntegrityError
 
 from projecthub.core.models import TenantMembership, Tenant
 
@@ -34,6 +36,14 @@ class TestTenant:
         tenant = tenant_factory(is_active=True)
         with pytest.raises(ValueError, match="updated_by is required."):
             tenant.deactivate(updated_by=None)
+
+    def test_unique_name_per_owner(self, john, alice, tenant_factory):
+        tenant_factory(owner=john, name="TenantA")
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                tenant_factory(owner=john, name="TenantA")
+
+        tenant_factory(owner=alice, name="TenantA")
 
 
 @pytest.mark.django_db
