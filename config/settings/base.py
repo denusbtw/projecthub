@@ -34,6 +34,8 @@ THIRD_PARTY_APPS = [
     "rest_framework",
     "django_filters",
     "storages"
+    "storages",
+    "flower",
 ]
 
 LOCAL_APPS = [
@@ -42,7 +44,7 @@ LOCAL_APPS = [
     "projecthub.projects",
     "projecthub.tasks",
     "projecthub.comments",
-    "projecthub.attachments"
+    "projecthub.attachments",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -170,3 +172,11 @@ STORAGES = {
 }
 
 MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.backblazeb2.com/media/"
+MEDIA_URL = (
+    f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.backblazeb2.com/media/"
+)
+
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND")
+CELERY_TIMEZONE = env("CELERY_TIMEZONE")
+CELERY_TRACK_TASK_STARTED = env("CELERY_TRACK_TASK_STARTED")
