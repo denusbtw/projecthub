@@ -43,6 +43,16 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             "close_date",
         )
 
+    # TODO: responsible should be member of project and tenant
+    # def validate_responsible(self, responsible):
+    #     pass
+
+    def create(self, validated_data):
+        responsible = validated_data.pop("responsible")
+        instance = super().create(validated_data)
+        instance.assign_responsible(responsible)
+        return instance
+
 
 class TaskUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,6 +68,16 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
             "close_date",
         )
         extra_kwargs = {"name": {"required": False}}
+
+    # TODO: responsible should be member of project and tenant
+    # def validate_responsible(self, responsible):
+    #     pass
+
+    def update(self, instance, validated_data):
+        responsible = validated_data.pop("responsible")
+        super().update(instance, validated_data)
+        instance.assign_responsible(responsible)
+        return instance
 
 
 class TaskUpdateSerializerForResponsible(serializers.ModelSerializer):

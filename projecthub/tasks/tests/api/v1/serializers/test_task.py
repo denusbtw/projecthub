@@ -6,6 +6,7 @@ from projecthub.tasks.api.v1.serializers import (
     TaskListSerializer,
     TaskDetailSerializer,
     TaskUpdateSerializer,
+    TaskCreateSerializer,
     TaskUpdateSerializerForResponsible,
 )
 from projecthub.tasks.models import Board
@@ -55,11 +56,31 @@ class TestTaskDetailSerializer:
 
 
 @pytest.mark.django_db
+class TestTaskCreateSerializer:
+
+    def test_responsible_is_set(self, project, user):
+        data = {"name": "test task", "responsible": user.pk}
+        serializer = TaskCreateSerializer(data=data)
+        assert serializer.is_valid(), serializer.errors
+
+        task = serializer.save(project=project)
+        assert task.responsible == user
+
+
+@pytest.mark.django_db
 class TestTaskUpdateSerializer:
 
     def test_no_error_if_empty_data(self, task):
         serializer = TaskUpdateSerializer(task, data={})
         assert serializer.is_valid(), serializer.errors
+
+    def test_responsible_is_set(self, task, user):
+        data = {"responsible": user.pk}
+        serializer = TaskUpdateSerializer(task, data=data)
+        assert serializer.is_valid(), serializer.errors
+
+        task = serializer.save()
+        assert task.responsible == user
 
 
 @pytest.mark.django_db
