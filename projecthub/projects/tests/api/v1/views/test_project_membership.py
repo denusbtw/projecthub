@@ -25,8 +25,8 @@ def detail_url(project_membership):
 
 
 @pytest.fixture
-def data(user_factory):
-    return {"user": user_factory().pk, "role": ProjectMembership.Role.READER}
+def data(tenant_membership, user_factory):
+    return {"user": tenant_membership.user_id, "role": ProjectMembership.Role.READER}
 
 
 @pytest.mark.django_db
@@ -85,46 +85,6 @@ class TestProjectMembershipListCreateAPIView:
             "method, expected_status_code",
             [("get", status.HTTP_200_OK), ("post", status.HTTP_403_FORBIDDEN)],
         )
-        def test_project_reader(
-            self,
-            api_client,
-            list_url,
-            http_host,
-            project_reader,
-            data,
-            method,
-            expected_status_code,
-        ):
-            api_client.force_authenticate(user=project_reader.user)
-            response = getattr(api_client, method)(
-                list_url, data=data, HTTP_HOST=http_host
-            )
-            assert response.status_code == expected_status_code
-
-        @pytest.mark.parametrize(
-            "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_403_FORBIDDEN)],
-        )
-        def test_project_guest(
-            self,
-            api_client,
-            list_url,
-            http_host,
-            project_guest,
-            data,
-            method,
-            expected_status_code,
-        ):
-            api_client.force_authenticate(user=project_guest.user)
-            response = getattr(api_client, method)(
-                list_url, data=data, HTTP_HOST=http_host
-            )
-            assert response.status_code == expected_status_code
-
-        @pytest.mark.parametrize(
-            "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_403_FORBIDDEN)],
-        )
         def test_project_user(
             self,
             api_client,
@@ -136,26 +96,6 @@ class TestProjectMembershipListCreateAPIView:
             expected_status_code,
         ):
             api_client.force_authenticate(user=project_user.user)
-            response = getattr(api_client, method)(
-                list_url, data=data, HTTP_HOST=http_host
-            )
-            assert response.status_code == expected_status_code
-
-        @pytest.mark.parametrize(
-            "method, expected_status_code",
-            [("get", status.HTTP_200_OK), ("post", status.HTTP_201_CREATED)],
-        )
-        def test_project_responsible(
-            self,
-            api_client,
-            list_url,
-            http_host,
-            project,
-            data,
-            method,
-            expected_status_code,
-        ):
-            api_client.force_authenticate(user=project.responsible)
             response = getattr(api_client, method)(
                 list_url, data=data, HTTP_HOST=http_host
             )

@@ -76,7 +76,7 @@ class ProjectFactory(factory.django.DjangoModelFactory):
 
 
 class ProjectMembershipFactory(factory.django.DjangoModelFactory):
-    project = factory.SubFactory(ProjectFactory)
+    project = factory.SubFactory(ProjectFactory, active=True)
     user = factory.SubFactory(UserFactory)
     role = factory.Faker(
         "random_element", elements=[c[0] for c in ProjectMembership.Role.choices]

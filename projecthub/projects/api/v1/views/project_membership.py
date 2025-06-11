@@ -1,5 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, filters, permissions
+from rest_framework.generics import get_object_or_404
 
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.permissions import (
@@ -13,7 +14,7 @@ from projecthub.policies import (
     IsTenantOwnerPolicy,
     IsProjectMemberPolicy,
 )
-from projecthub.projects.models import ProjectMembership
+from projecthub.projects.models import ProjectMembership, Project
 from .pagination import ProjectMembershipPagination
 from ..filters import ProjectMembershipFilterSet
 from ..serializers import (
@@ -62,7 +63,8 @@ class ProjectMembershipListCreateAPIView(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context["project_id"] = self.get_project_id()
+        project = get_object_or_404(Project, pk=self.get_project_id())
+        context["project"] = project
         return context
 
     def perform_create(self, serializer):

@@ -36,6 +36,59 @@ class TestProjectMembershipCreateSerializer:
         with pytest.raises(ValidationError):
             serializer.is_valid(raise_exception=True)
 
+    def test_error_if_project_is_archived(self, tenant, user, archived_project):
+        data = {"user": user.pk, "role": ProjectMembership.Role.USER}
+        context = {"project": archived_project}
+        serializer = ProjectMembershipCreateSerializer(data=data, context=context)
+
+        with pytest.raises(ValidationError) as exc:
+            serializer.is_valid(raise_exception=True)
+
+        assert "archived" in str(exc.value)
+
+    def test_error_if_user_is_tenant_owner(self, tenant, active_project):
+        data = {"user": tenant.owner_id, "role": ProjectMembership.Role.USER}
+        context = {"project": active_project}
+        serializer = ProjectMembershipCreateSerializer(data=data, context=context)
+
+        with pytest.raises(ValidationError) as exc:
+            serializer.is_valid(raise_exception=True)
+
+        assert "Owner of tenant" in str(exc.value)
+
+    def test_error_if_user_is_project_owner(self, active_project):
+        data = {"user": active_project.owner_id, "role": ProjectMembership.Role.USER}
+        context = {"project": active_project}
+        serializer = ProjectMembershipCreateSerializer(data=data, context=context)
+
+        with pytest.raises(ValidationError) as exc:
+            serializer.is_valid(raise_exception=True)
+
+        assert "Owner of tenant" in str(exc.value)
+
+    def test_error_if_user_is_project_supervisor(self, active_project):
+        data = {
+            "user": active_project.supervisor_id,
+            "role": ProjectMembership.Role.USER,
+        }
+        context = {"project": active_project}
+        serializer = ProjectMembershipCreateSerializer(data=data, context=context)
+
+        with pytest.raises(ValidationError) as exc:
+            serializer.is_valid(raise_exception=True)
+
+        assert "Owner of tenant" in str(exc.value)
+
+    def test_error_if_user_is_not_member_of_tenant(self, tenant, user, active_project):
+        data = {"user": user.pk, "role": ProjectMembership.Role.USER}
+        context = {"project": active_project}
+        serializer = ProjectMembershipCreateSerializer(data=data, context=context)
+
+        with pytest.raises(ValidationError) as exc:
+            serializer.is_valid(raise_exception=True)
+
+        assert "User must be member of tenant." in str(exc.value)
+
 
 @pytest.mark.django_db
 class TestProjectMembershipUpdateSerializer:

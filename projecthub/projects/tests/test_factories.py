@@ -15,6 +15,10 @@ class TestProjectMembershipFactory:
             tenant=project.tenant, user=membership.user
         ).exists()
 
+    def test_creates_for_active_project(self, project_membership_factory):
+        membership = project_membership_factory()
+        assert membership.project.is_active
+
 
 @pytest.mark.django_db
 class TestProjectFactory:

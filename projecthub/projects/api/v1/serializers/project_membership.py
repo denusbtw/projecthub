@@ -18,17 +18,31 @@ class ProjectMembershipDetailSerializer(BaseProjectMembershipReadSerializer):
     pass
 
 
-class BaseProjectMembershipWriteSerializer(serializers.ModelSerializer):
-    pass
-
-
-class ProjectMembershipCreateSerializer(BaseProjectMembershipWriteSerializer):
+class ProjectMembershipCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectMembership
         fields = ("id", "user", "role")
 
+    def validate_user(self, user):
+        project = self.context["project"]
+        if project.is_archived:
+            error_msg = "Can't create members for archived project."
+            raise serializers.ValidationError(error_msg)
 
-class ProjectMembershipUpdateSerializer(BaseProjectMembershipWriteSerializer):
+        tenant = project.tenant
+
+        if user.pk in {tenant.owner_id, project.owner_id, project.supervisor_id}:
+            raise serializers.ValidationError(
+                "Owner of tenant or owner and supervisor of project can't be members."
+            )
+
+        if user.pk not in tenant.members.values_list("user_id", flat=True):
+            raise serializers.ValidationError("User must be member of tenant.")
+
+        return user
+
+
+class ProjectMembershipUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectMembership
         fields = ("role",)
