@@ -2,7 +2,6 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
-from projecthub.comments.tests.factories import CommentFactory
 from projecthub.core.models import TenantMembership
 from projecthub.core.tests.factories import TenantFactory, TenantMembershipFactory
 from projecthub.projects.models import ProjectMembership
@@ -157,16 +156,6 @@ def in_review_board(db, project):
 @pytest.fixture
 def done_board(db, project):
     return BoardFactory(project=project, name="Done", order=4)
-
-
-@pytest.fixture
-def comment_factory():
-    return CommentFactory
-
-
-@pytest.fixture
-def comment(db, task):
-    return CommentFactory(task=task)
 
 
 @pytest.fixture

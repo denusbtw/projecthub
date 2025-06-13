@@ -2,17 +2,8 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 
-from projecthub.comments.models import Comment
 from projecthub.core.admin import BaseAdmin
 from projecthub.tasks.models import Task, Board
-
-
-class CommentInline(admin.TabularInline):
-    model = Comment
-    fields = ("body", "created_by")
-    readonly_fields = ("created_by",)
-    fk_name = "task"
-    extra = 1
 
 
 @admin.register(Task)
@@ -29,7 +20,6 @@ class TaskAdmin(BaseAdmin):
     search_fields = ("name", "project__name", "responsible__username")
     readonly_fields = ("created_at", "updated_at", "created_by", "updated_by")
     autocomplete_fields = ("project", "board", "responsible")
-    inlines = (CommentInline,)
 
     fieldsets = [
         (

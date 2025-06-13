@@ -1,6 +1,5 @@
 from rest_framework.views import exception_handler
 
-from projecthub.comments.models import Comment
 from projecthub.projects.models import Project, ProjectMembership
 from projecthub.tasks.models import Task, Board
 
@@ -25,8 +24,6 @@ def get_project_id_from_obj(obj):
             return obj.project_id
         case Task():
             return obj.project_id
-        case Comment():
-            return obj.task.project_id
         case Board():
             return obj.project_id
         case _:

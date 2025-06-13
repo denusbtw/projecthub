@@ -1,9 +1,5 @@
 from django.urls import path
 
-from projecthub.comments.api.v1.views import (
-    CommentListCreateAPIView,
-    CommentDestroyAPIView,
-)
 from projecthub.core.api.v1.views import (
     TenantListCreateAPIView,
     TenantRetrieveUpdateDestroyAPIView,
@@ -76,15 +72,5 @@ urlpatterns = [
         "projects/<uuid:project_id>/boards/<uuid:pk>/",
         BoardRetrieveUpdateDestroyAPIView.as_view(),
         name="board_detail",
-    ),
-    path(
-        "tasks/<uuid:task_id>/comments/",
-        CommentListCreateAPIView.as_view(),
-        name="comment_list",
-    ),
-    path(
-        "tasks/<uuid:task_id>/comments/<uuid:pk>/",
-        CommentDestroyAPIView.as_view(),
-        name="comment_detail",
     ),
 ]
