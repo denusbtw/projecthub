@@ -1,4 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, filters, permissions
 
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
@@ -23,6 +24,25 @@ from ..serializers import (
 )
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="role",
+            description="Filter by role",
+            required=False,
+            type=str,
+            location=OpenApiParameter.QUERY,
+        ),
+        OpenApiParameter(
+            name="creator",
+            description="Filter by creator username",
+            required=False,
+            type=str,
+            location=OpenApiParameter.QUERY,
+        ),
+    ],
+    methods=["GET"],
+)
 class TenantMembershipListCreateAPIView(
     SecureGenericAPIView, generics.ListCreateAPIView
 ):

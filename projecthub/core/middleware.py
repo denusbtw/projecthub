@@ -8,6 +8,7 @@ class TenantMiddleware:
         self.whitelist_paths = [
             "/admin",
             "/api/auth",
+            "/api/schema",
         ]
 
     def __call__(self, request):

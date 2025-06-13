@@ -36,6 +36,7 @@ THIRD_PARTY_APPS = [
     "storages",
     "flower",
     "django_celery_beat",
+    "drf_spectacular",
 ]
 
 LOCAL_APPS = [
@@ -135,6 +136,7 @@ LOGGING = {
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAdminUser",),
     "EXCEPTION_HANDLER": "projecthub.core.utils.custom_exception_handler",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 
@@ -191,3 +193,11 @@ EMAIL_USE_TLS = env("EMAIL_USE_TLS", default=True)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "ProjectHUB API",
+    "DESCRIPTION": "",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}

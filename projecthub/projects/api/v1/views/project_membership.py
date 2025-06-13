@@ -1,4 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, filters, permissions
 from rest_framework.generics import get_object_or_404
 
@@ -25,6 +27,24 @@ from ..serializers import (
 )
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="role",
+            type=OpenApiTypes.STR,
+            description="Filter members by role in project.",
+            required=False,
+            many=True,
+        ),
+        OpenApiParameter(
+            name="creator",
+            type=OpenApiTypes.STR,
+            description="Filter members by creator username (partial match)",
+            required=False,
+        ),
+    ],
+    methods=["GET"],
+)
 class ProjectMembershipListCreateAPIView(
     SecureGenericAPIView, generics.ListCreateAPIView
 ):

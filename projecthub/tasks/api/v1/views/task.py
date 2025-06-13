@@ -1,4 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, filters, permissions
 from rest_framework.generics import get_object_or_404
 
@@ -28,6 +30,84 @@ from ..serializers import (
 )
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="status",
+            type=OpenApiTypes.STR,
+            description="Фільтр за статусом задачі (можна передати кілька через кому)",
+            required=False,
+            many=True,
+        ),
+        OpenApiParameter(
+            name="priority",
+            type=OpenApiTypes.INT,
+            description="Фільтр за точним пріоритетом",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="priority_min",
+            type=OpenApiTypes.INT,
+            description="Фільтр за мінімальним пріоритетом (gte)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="priority_max",
+            type=OpenApiTypes.INT,
+            description="Фільтр за максимальним пріоритетом (lte)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="responsible",
+            type=OpenApiTypes.STR,
+            description="Фільтр за username відповідального",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="creator",
+            type=OpenApiTypes.STR,
+            description="Фільтр за username того, хто створив задачу",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="start_date_after",
+            type=OpenApiTypes.DATE,
+            description="Фільтр за початковою датою задачі, починаючи з цієї дати (gte)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="start_date_before",
+            type=OpenApiTypes.DATE,
+            description="Фільтр за початковою датою задачі до цієї дати (lte)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="end_date_after",
+            type=OpenApiTypes.DATE,
+            description="Фільтр за кінцевою датою задачі, починаючи з цієї дати (gte)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="end_date_before",
+            type=OpenApiTypes.DATE,
+            description="Фільтр за кінцевою датою задачі до цієї дати (lte)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="close_date_after",
+            type=OpenApiTypes.DATE,
+            description="Фільтр за датою закриття задачі, починаючи з цієї дати (gte)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="close_date_before",
+            type=OpenApiTypes.DATE,
+            description="Фільтр за датою закриття задачі до цієї дати (lte)",
+            required=False,
+        ),
+    ],
+    methods=["GET"],
+)
 class TaskListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
     policy_classes = [
         IsAuthenticatedPolicy

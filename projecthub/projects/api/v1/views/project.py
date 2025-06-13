@@ -1,4 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, filters, permissions
 
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
@@ -25,6 +27,78 @@ from ..serializers import (
 )
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="status",
+            type=OpenApiTypes.STR,
+            description="Filter by project status (multiple allowed)",
+            required=False,
+            many=True,
+        ),
+        OpenApiParameter(
+            name="start_date_after",
+            type=OpenApiTypes.DATE,
+            description="Filter projects with start_date >= this value",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="start_date_before",
+            type=OpenApiTypes.DATE,
+            description="Filter projects with start_date <= this value",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="end_date_after",
+            type=OpenApiTypes.DATE,
+            description="Filter projects with end_date >= this value",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="end_date_before",
+            type=OpenApiTypes.DATE,
+            description="Filter projects with end_date <= this value",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="close_date_after",
+            type=OpenApiTypes.DATE,
+            description="Filter projects with close_date >= this value",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="close_date_before",
+            type=OpenApiTypes.DATE,
+            description="Filter projects with close_date <= this value",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="creator",
+            type=OpenApiTypes.STR,
+            description="Filter projects by creator username (partial match)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="owner",
+            type=OpenApiTypes.STR,
+            description="Filter projects by owner username (partial match)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="supervisor",
+            type=OpenApiTypes.STR,
+            description="Filter projects by supervisor username (partial match)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="responsible",
+            type=OpenApiTypes.STR,
+            description="Filter projects by responsible username (partial match)",
+            required=False,
+        ),
+    ],
+    methods=["GET"],
+)
 class ProjectListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
     policy_classes = [
         IsAuthenticatedPolicy & (IsAdminUserPolicy | IsTenantMemberPolicy)

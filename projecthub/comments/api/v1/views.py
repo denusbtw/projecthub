@@ -1,4 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, permissions, filters
 from rest_framework.generics import get_object_or_404
 
@@ -6,7 +8,7 @@ from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.permissions import (
     IsTenantOwnerPermission,
     IsProjectOwnerPermission,
-    IsCommentAuthorPermission
+    IsCommentAuthorPermission,
 )
 from projecthub.policies import (
     IsAuthenticatedPolicy,
@@ -22,6 +24,35 @@ from .serializers import CommentListSerializer, CommentCreateSerializer
 from ...models import Comment
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="parent",
+            type=OpenApiTypes.INT,
+            description="Filter by parent comment UUID.",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="author",
+            type=OpenApiTypes.STR,
+            description="Filter by comment author username (partial match)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="created_after",
+            type=OpenApiTypes.DATE,
+            description="Filter by create date of comment (greater than or equal)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="created_before",
+            type=OpenApiTypes.DATE,
+            description="Filter by create date of comment (less than or equal)",
+            required=False,
+        ),
+    ],
+    methods=["GET"],
+)
 class CommentListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
     policy_classes = [
         IsAuthenticatedPolicy
@@ -37,7 +68,7 @@ class CommentListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView)
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
-        filters.OrderingFilter
+        filters.OrderingFilter,
     ]
     filterset_class = CommentFilterSet
     search_fields = ["body"]
