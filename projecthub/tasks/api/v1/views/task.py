@@ -1,12 +1,13 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, filters, permissions
+from rest_framework.generics import get_object_or_404
 
 from projecthub.core.api.v1.views.base import SecureGenericAPIView
 from projecthub.permissions import (
     ReadOnlyPermission,
     IsTenantOwnerPermission,
     IsProjectStaffPermission,
-    TaskResponsibleHasNoDeletePermission
+    TaskResponsibleHasNoDeletePermission,
 )
 from projecthub.policies import (
     IsAuthenticatedPolicy,
@@ -14,6 +15,7 @@ from projecthub.policies import (
     IsTenantOwnerPolicy,
     IsProjectMemberPolicy,
 )
+from projecthub.projects.models import Project
 from projecthub.tasks.models import Task
 from .pagination import TaskPagination
 from ..filters import TaskFilterSet
@@ -29,11 +31,7 @@ from ..serializers import (
 class TaskListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
     policy_classes = [
         IsAuthenticatedPolicy
-        & (
-            IsAdminUserPolicy
-            | IsTenantOwnerPolicy
-            | IsProjectMemberPolicy
-        )
+        & (IsAdminUserPolicy | IsTenantOwnerPolicy | IsProjectMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated
@@ -48,17 +46,17 @@ class TaskListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
-        filters.OrderingFilter
+        filters.OrderingFilter,
     ]
     filterset_class = TaskFilterSet
-    search_fields = ["name"] #TODO: add search by description
+    search_fields = ["name"]  # TODO: add search by description
     ordering_fields = [
         "name",
         "priority",
         "created_at",
         "start_date",
         "end_date",
-        "close_date"
+        "close_date",
     ]
 
     def get_queryset(self):
@@ -67,7 +65,7 @@ class TaskListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
         qs = qs.visible_to(
             user=self.request.user,
             tenant=self.request.tenant,
-            project_id=self.kwargs["project_id"]
+            project_id=self.kwargs["project_id"],
         )
         return qs
 
@@ -75,6 +73,11 @@ class TaskListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
         if self.request.method == "POST":
             return TaskCreateSerializer
         return TaskListSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["project"] = get_object_or_404(Project, pk=self.kwargs["project_id"])
+        return context
 
     def perform_create(self, serializer):
         serializer.save(
@@ -84,15 +87,12 @@ class TaskListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
         )
 
 
-class TaskRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
-                                       generics.RetrieveUpdateDestroyAPIView):
+class TaskRetrieveUpdateDestroyAPIView(
+    SecureGenericAPIView, generics.RetrieveUpdateDestroyAPIView
+):
     policy_classes = [
         IsAuthenticatedPolicy
-        & (
-            IsAdminUserPolicy
-            | IsTenantOwnerPolicy
-            | IsProjectMemberPolicy
-        )
+        & (IsAdminUserPolicy | IsTenantOwnerPolicy | IsProjectMemberPolicy)
     ]
     permission_classes = [
         permissions.IsAuthenticated
@@ -111,7 +111,7 @@ class TaskRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
         qs = qs.visible_to(
             user=self.request.user,
             tenant=self.request.tenant,
-            project_id=self.kwargs["project_id"]
+            project_id=self.kwargs["project_id"],
         )
         return qs
 
@@ -122,6 +122,11 @@ class TaskRetrieveUpdateDestroyAPIView(SecureGenericAPIView,
                 return TaskUpdateSerializerForResponsible
             return TaskUpdateSerializer
         return TaskDetailSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request_user"] = self.request.user
+        return context
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)

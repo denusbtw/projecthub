@@ -52,14 +52,6 @@ class Project(UUIDModel, TimestampedModel):
         related_name="supervised_projects",
         help_text=_("Supervisor of project"),
     )
-    responsible = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="responsible_projects",
-        help_text=_("Responsible of project"),
-    )
     name = models.CharField(max_length=255, help_text=_("Name of project."))
     status = models.CharField(
         max_length=15,

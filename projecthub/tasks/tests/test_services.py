@@ -7,15 +7,19 @@ from projecthub.tasks.services import create_default_boards
 @pytest.mark.django_db
 class TestCreateDefaultBoards:
 
-    def test_success(self, project):
+    def test_create_4_boards(self, project):
         create_default_boards(project)
         boards = Board.objects.filter(project=project)
-
         assert len(boards) == 4
-        board_types = {
-            Board.Type.TODO,
-            Board.Type.IN_PROGRESS,
-            Board.Type.IN_REVIEW,
-            Board.Type.DONE,
-        }
-        assert board_types == set(boards.values_list("type", flat=True))
+
+    def test_create_boards_with_correct_names(self, project):
+        create_default_boards(project)
+        expected_names = {"To Do", "In Progress", "In Review", "Done"}
+        actual_names = set(project.boards.values_list("name", flat=True))
+        assert actual_names == expected_names
+
+    def test_create_boards_with_correct_order(self, project):
+        create_default_boards(project)
+        boards = project.boards.order_by("order")
+        orders = list(boards.values_list("order", flat=True))
+        assert orders == [1, 2, 3, 4]

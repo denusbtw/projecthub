@@ -9,11 +9,8 @@ from ..models import Task, Board
 
 class BoardFactory(factory.django.DjangoModelFactory):
     project = factory.SubFactory(ProjectFactory)
-    name = factory.Sequence(lambda n: f"name_{n}")
-    type = factory.Faker("random_element", elements=[c[0] for c in Board.Type.choices])
+    name = factory.Faker("word")
     order = factory.Sequence(lambda n: n + 1)
-    created_by = factory.SubFactory(UserFactory)
-    updated_by = factory.SubFactory(UserFactory)
 
     class Meta:
         model = Board

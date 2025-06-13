@@ -19,17 +19,9 @@ class IsProjectStaffPermission(BasePermission):
     def has_permission(self, request, view):
         project_id = get_project_id_from_view(view)
         project = get_object_or_404(Project, pk=project_id)
-        return request.user.id in {
-            project.owner_id,
-            project.supervisor_id,
-            project.responsible_id,
-        }
+        return request.user.id in {project.owner_id, project.supervisor_id}
 
     def has_object_permission(self, request, view, obj):
         project_id = get_project_id_from_obj(obj)
         project = get_object_or_404(Project, pk=project_id)
-        return request.user.id in {
-            project.owner_id,
-            project.supervisor_id,
-            project.responsible_id,
-        }
+        return request.user.id in {project.owner_id, project.supervisor_id}

@@ -2,7 +2,7 @@ from django.forms import CharField
 from django_filters import rest_framework as filters
 
 from projecthub.core.filters import MultipleValueFilter
-from ...models import Task, Board
+from ...models import Task
 
 
 class TaskFilterSet(filters.FilterSet):
@@ -47,13 +47,3 @@ class TaskFilterSet(filters.FilterSet):
             "close_date_after",
             "close_date_before",
         )
-
-
-class BoardFilterSet(filters.FilterSet):
-    creator = filters.CharFilter(
-        field_name="created_by__username", lookup_expr="icontains"
-    )
-
-    class Meta:
-        model = Board
-        fields = ("creator", "type")

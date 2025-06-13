@@ -24,7 +24,6 @@ def create_or_get_tenant_membership_for_user(tenant, user, created_by, updated_b
 class ProjectFactory(factory.django.DjangoModelFactory):
     owner = factory.SubFactory(UserFactory)
     supervisor = factory.SubFactory(UserFactory)
-    responsible = factory.SubFactory(UserFactory)
     tenant = factory.SubFactory(TenantFactory)
     name = factory.Faker("word")
     description = factory.Faker("paragraph", nb_sentences=5)

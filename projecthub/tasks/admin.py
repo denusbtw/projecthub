@@ -82,11 +82,10 @@ class TaskAdmin(BaseAdmin):
 
 @admin.register(Board)
 class BoardAdmin(BaseAdmin):
-    list_display = ("name", "type", "project_link", "order")
+    list_display = ("name", "project_link", "order")
     list_select_related = ("project",)
-    list_filter = ("type",)
-    search_fields = ("name", "type", "project__name")
-    readonly_fields = ("created_at", "updated_at", "created_by", "updated_by")
+    search_fields = ("name", "project__name")
+    readonly_fields = ("created_at", "updated_at")
     autocomplete_fields = ("project",)
 
     fieldsets = [
@@ -96,14 +95,13 @@ class BoardAdmin(BaseAdmin):
                 "fields": (
                     "project",
                     "name",
-                    "type",
                     "order",
                 )
             },
         ),
         (
             "Metadata",
-            {"fields": ("created_by", "updated_by", "created_at", "updated_at")},
+            {"fields": ("created_at", "updated_at")},
         ),
     ]
 

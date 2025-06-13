@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from projecthub.tasks.models import Task, Board
@@ -27,42 +27,10 @@ class TestTask:
         with pytest.raises(ValidationError, match="updated_by is required."):
             task.set_board(board=todo_board, updated_by=None)
 
-    def test_set_board_sets_close_date_if_board_is_done(self, done_board, task, user):
-        task.set_board(board=done_board, updated_by=user)
-        assert task.close_date is not None
-
     def test_set_board_sets_board_and_updated_by(self, done_board, task, user):
         task.set_board(board=done_board, updated_by=user)
         assert task.board == done_board
         assert task.updated_by == user
-
-    def test_is_todo_property(self, task_factory, todo_board):
-        task = task_factory(board=todo_board)
-        assert task.is_todo
-        assert not task.is_in_progress
-        assert not task.is_in_review
-        assert not task.is_done
-
-    def test_is_in_progress_property(self, task_factory, in_progress_board):
-        task = task_factory(board=in_progress_board)
-        assert not task.is_todo
-        assert task.is_in_progress
-        assert not task.is_in_review
-        assert not task.is_done
-
-    def test_is_in_review_property(self, task_factory, in_review_board):
-        task = task_factory(board=in_review_board)
-        assert not task.is_todo
-        assert not task.is_in_progress
-        assert task.is_in_review
-        assert not task.is_done
-
-    def test_is_done_property(self, task_factory, done_board):
-        task = task_factory(board=done_board)
-        assert not task.is_todo
-        assert not task.is_in_progress
-        assert not task.is_in_review
-        assert task.is_done
 
     def test_revoke_should_remove_responsible_and_status(
         self, todo_board, user, task_factory
@@ -71,7 +39,6 @@ class TestTask:
         task.revoke(updated_by=user)
         assert task.board is None
         assert task.responsible is None
-        assert task.updated_by == user
 
     def test_revoke_error_if_missing_updated_by(self, task):
         with pytest.raises(ValidationError, match="updated_by is required."):
@@ -141,67 +108,21 @@ class TestTask:
 @pytest.mark.django_db
 class TestBoard:
 
-    def test_error_if_board_with_such_order_exists_in_tenant(
-        self, project, board_factory
-    ):
-        board_factory(project=project, order=10)
+    def test_str(self, project_factory, board_factory):
+        project = project_factory(name="projecthub", active=True)
+        board = board_factory(project=project, name="To Do", order=1)
+        assert str(board) == "To Do (1) in projecthub"
+
+    def test_unique_order_per_project(self, project_factory, board_factory):
+        project1 = project_factory(active=True)
+        project2 = project_factory(active=True)
+
+        board_factory(project=project1, order=1)
         with pytest.raises(IntegrityError):
-            board_factory(project=project, order=10)
+            with transaction.atomic():
+                board_factory(project=project1, order=1)
 
-    def test_only_one_todo_board_can_exist_for_project(self, project, board_factory):
-        board_factory(project=project, type=Board.Type.TODO)
-        with pytest.raises(IntegrityError):
-            board_factory(project=project, type=Board.Type.TODO)
-
-    def test_only_one_in_progress_board_can_exist_for_project(
-        self, project, board_factory
-    ):
-        board_factory(project=project, type=Board.Type.IN_PROGRESS)
-        with pytest.raises(IntegrityError) as exc:
-            board_factory(project=project, type=Board.Type.IN_PROGRESS)
-        assert "unique constraint" in str(exc.value)
-
-    def test_only_one_in_review_board_can_exist_for_project(
-        self, project, board_factory
-    ):
-        board_factory(project=project, type=Board.Type.IN_REVIEW)
-        with pytest.raises(IntegrityError) as exc:
-            board_factory(project=project, type=Board.Type.IN_REVIEW)
-        assert "unique constraint" in str(exc.value)
-
-    def test_only_one_done_board_can_exist_for_project(self, project, board_factory):
-        board_factory(project=project, type=Board.Type.DONE)
-        with pytest.raises(IntegrityError) as exc:
-            board_factory(project=project, type=Board.Type.DONE)
-        assert "unique constraint" in str(exc.value)
-
-    def test_many_custom_boards_can_exist_for_project(self, project, board_factory):
-        board_factory(project=project, type=Board.Type.CUSTOM)
-        board_factory(project=project, type=Board.Type.CUSTOM)
-
-    def test_is_todo_property(self, todo_board):
-        assert todo_board.is_todo
-        assert not todo_board.is_in_progress
-        assert not todo_board.is_in_review
-        assert not todo_board.is_done
-
-    def test_is_in_progress_property(self, in_progress_board):
-        assert not in_progress_board.is_todo
-        assert in_progress_board.is_in_progress
-        assert not in_progress_board.is_in_review
-        assert not in_progress_board.is_done
-
-    def test_is_in_review_property(self, in_review_board):
-        assert not in_review_board.is_todo
-        assert not in_review_board.is_in_progress
-        assert in_review_board.is_in_review
-        assert not in_review_board.is_done
-
-    def test_is_done_property(self, done_board):
-        assert not done_board.is_todo
-        assert not done_board.is_in_progress
-        assert not done_board.is_in_review
-        assert done_board.is_done
+        board_factory(project=project2, order=1)
 
 
 @pytest.mark.django_db
@@ -252,15 +173,6 @@ class TestTaskQuerySet:
         task_factory.create_batch(3, project=project)
         qs = Task.objects.visible_to(
             user=project.supervisor, tenant=project.tenant, project_id=project.pk
-        )
-        assert qs.count() == 3
-
-    def test_visible_to_returns_all_tasks_if_project_responsible(
-        self, project, task_factory
-    ):
-        task_factory.create_batch(3, project=project)
-        qs = Task.objects.visible_to(
-            user=project.responsible, tenant=project.tenant, project_id=project.pk
         )
         assert qs.count() == 3
 

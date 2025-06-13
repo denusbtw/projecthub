@@ -1,4 +1,3 @@
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, filters
 from rest_framework.generics import get_object_or_404
 
@@ -17,7 +16,6 @@ from projecthub.policies import (
 from projecthub.projects.models import Project
 from projecthub.tasks.models import Board
 from .pagination import BoardPagination
-from ..filters import BoardFilterSet
 from ..serializers import (
     BoardCreateSerializer,
     BoardListSerializer,
@@ -35,8 +33,8 @@ class BoardListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
         - Only staff and members of current tenant
 
     Permissions:
-        - GET: admin, owner and members of tenant
-        - POST: admin and tenant owner
+        - GET: admin, tenant owner, owner, supervisor and members of project
+        - POST: admin, tenant owner, project owner, project supervisor
     """
     policy_classes = [
         IsAuthenticatedPolicy
@@ -52,17 +50,12 @@ class BoardListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
         )
     ]
     pagination_class = BoardPagination
-    filter_backends = [
-        DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter,
-    ]
-    filterset_class = BoardFilterSet
-    search_fields = ["name", "type"]
-    ordering_fields = ["name", "order", "created_at"]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ("name",)
+    ordering_fields = ("order",)
 
     def get_queryset(self):
-        project = get_object_or_404(Project, pk=self.get_project_id())
+        project = self.get_project()
         return Board.objects.for_project(project)
 
     def get_serializer_class(self):
@@ -70,15 +63,20 @@ class BoardListCreateAPIView(SecureGenericAPIView, generics.ListCreateAPIView):
             return BoardCreateSerializer
         return BoardListSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["project"] = self.get_project()
+        return context
+
     def perform_create(self, serializer):
-        serializer.save(
-            project_id=self.get_project_id(),
-            created_by=self.request.user,
-            updated_by=self.request.user,
-        )
+        serializer.save(project_id=self.get_project_id())
 
     def get_project_id(self):
         return self.kwargs["project_id"]
+
+    # TODO: додати кешування project в self._cached_project
+    def get_project(self):
+        return get_object_or_404(Project, pk=self.get_project_id())
 
 
 class BoardRetrieveUpdateDestroyAPIView(
@@ -99,7 +97,7 @@ class BoardRetrieveUpdateDestroyAPIView(
     ]
 
     def get_queryset(self):
-        project = get_object_or_404(Project, pk=self.get_project_id())
+        project = self.get_project()
         return Board.objects.for_project(project=project)
 
     def get_serializer_class(self):
@@ -107,8 +105,8 @@ class BoardRetrieveUpdateDestroyAPIView(
             return BoardUpdateSerializer
         return BoardDetailSerializer
 
-    def perform_update(self, serializer):
-        serializer.save(updated_by=self.request.user)
-
     def get_project_id(self):
         return self.kwargs["project_id"]
+
+    def get_project(self):
+        return get_object_or_404(Project, pk=self.get_project_id())

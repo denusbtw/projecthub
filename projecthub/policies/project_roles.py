@@ -15,11 +15,11 @@ class IsProjectMemberPolicy(BasePolicy):
             project_id=project_id, project__tenant=request.tenant, user=request.user
         )
 
-        return (
-            request.user.id
-            in {project.owner_id, project.supervisor_id, project.responsible_id}
+        has_access = (
+            request.user.id in {project.owner_id, project.supervisor_id}
             or project_membership.exists()
         )
+        return has_access
 
     def has_object_access(self, request, view, obj):
         project_id = get_project_id_from_obj(obj)
@@ -30,8 +30,7 @@ class IsProjectMemberPolicy(BasePolicy):
         )
 
         return (
-            request.user.id
-            in {project.owner_id, project.supervisor_id, project.responsible_id}
+            request.user.id in {project.owner_id, project.supervisor_id}
             or project_membership.exists()
         )
 
@@ -41,9 +40,4 @@ class IsProjectStaffPolicy(BasePolicy):
     def has_access(self, request, view):
         project_id = get_project_id_from_view(view)
         project = get_object_or_404(Project, pk=project_id)
-
-        return request.user.id in {
-            project.owner_id,
-            project.supervisor_id,
-            project.responsible_id,
-        }
+        return request.user.id in {project.owner_id, project.supervisor_id}

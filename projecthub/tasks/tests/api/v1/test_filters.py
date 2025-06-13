@@ -1,7 +1,7 @@
 import pytest
 
-from projecthub.tasks.api.v1.filters import TaskFilterSet, BoardFilterSet
-from projecthub.tasks.models import Task, Board
+from projecthub.tasks.api.v1.filters import TaskFilterSet
+from projecthub.tasks.models import Task
 
 
 @pytest.mark.django_db
@@ -26,17 +26,3 @@ class TestTaskFilterSet:
 
         assert filtered.count() == 1
         assert filtered.first().pk == john_task.pk
-
-
-@pytest.mark.django_db
-class TestBoardFilterSet:
-
-    def test_by_creator(self, board_factory, john, alice):
-        john_board = board_factory(created_by=john)
-        alice_board = board_factory(created_by=alice)
-
-        queryset = Board.objects.all()
-        filtered = BoardFilterSet({"creator": "jo"}, queryset=queryset).qs
-
-        assert filtered.count() == 1
-        assert filtered.first().pk == john_board.pk

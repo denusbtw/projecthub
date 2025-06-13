@@ -29,7 +29,7 @@ class TaskQuerySet(models.QuerySet):
             return self
 
         project = get_object_or_404(Project, pk=project_id)
-        if user.id in {project.owner_id, project.supervisor_id, project.responsible_id}:
+        if user.id in {project.owner_id, project.supervisor_id}:
             return self
 
         project_membership = ProjectMembership.objects.filter(
@@ -145,22 +145,11 @@ class Task(UUIDModel, TimestampedModel):
         if not updated_by:
             raise ValidationError("updated_by is required.")
 
-        # TODO: if code is None, it means that user wants to revoke from task
-        # so call self.revoke(updated_by)
-
-        now = timezone.now()
-
         self.board = board
         self.updated_by = updated_by
-        self.updated_at = now
-
-        if board.is_done:
-            self.close_date = now
+        self.updated_at = timezone.now()
 
         fields = ["board", "updated_by", "updated_at"]
-        if board.is_done:
-            fields.append("close_date")
-
         self.save(update_fields=fields)
 
     def revoke(self, updated_by):
@@ -169,26 +158,8 @@ class Task(UUIDModel, TimestampedModel):
 
         self.board = None
         self.responsible = None
-        # TODO: remove changing updated_by and updated_at here
-        self.updated_by = updated_by
         self.updated_at = timezone.now()
-        self.save(update_fields=["board", "responsible", "updated_by", "updated_at"])
-
-    @property
-    def is_todo(self):
-        return self.board and self.board.is_todo
-
-    @property
-    def is_done(self):
-        return self.board and self.board.is_done
-
-    @property
-    def is_in_progress(self):
-        return self.board and self.board.is_in_progress
-
-    @property
-    def is_in_review(self):
-        return self.board and self.board.is_in_review
+        self.save(update_fields=["board", "responsible", "updated_at"])
 
     def assign_responsible(self, new_responsible):
         from projecthub.tasks.tasks import send_task_assignment_email
